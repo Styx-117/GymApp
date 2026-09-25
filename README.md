@@ -51,7 +51,7 @@ GimnasioApp/
 │   │   │           ├── db/
 │   │   │           │   ├── ConexionDB.java
 │   │   │           │   └── ScriptBD.java
-│   │   │           ├── models/
+│   │   │           ├── models/ (Hecho)
 │   │   │           │   ├── Usuario.java
 │   │   │           │   ├── Socio.java
 │   │   │           │   ├── Entrenador.java
