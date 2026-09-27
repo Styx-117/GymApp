@@ -14,9 +14,9 @@ public class Usuario {
     private Long idUsuario;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_cliente")
+    @JoinColumn(name = "id_socio")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Cliente cliente;
+    private Socio socio;
 
     @NotBlank
     @Column(name = "nombre_usuario", unique = true, nullable = false, length = 50)
@@ -27,7 +27,7 @@ public class Usuario {
     private String contrasena;
 
     @Column(nullable = false, length = 30)
-    private String rol = "cliente";
+    private String rol = "SOCIO";
 
     @Column(nullable = false)
     private Boolean estado = true;
@@ -36,14 +36,19 @@ public class Usuario {
 
     public Long getIdUsuario() { return idUsuario; }
     public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
-    public Cliente getCliente() { return cliente; }
-    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+
+    public Socio getSocio() { return socio; }
+    public void setSocio(Socio socio) { this.socio = socio; }
+
     public String getNombreUsuario() { return nombreUsuario; }
     public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+
     public String getContrasena() { return contrasena; }
     public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
+
     public Boolean getEstado() { return estado; }
     public void setEstado(Boolean estado) { this.estado = estado; }
 }
