@@ -1,5 +1,4 @@
-package com.gimnasio.models;
-
+package com.smartfit.gymApp.model;
 import java.time.LocalTime;
 
 /**
@@ -13,7 +12,7 @@ public class Clase {
     private String nombre;
     private int idEntrenador;
     private String diaSemana; // LUNES, MARTES, ...
-    private timestamp horaInicio;
+    private LocalTime horaInicio;
     private LocalTime horaFin;
     private int cupoMaximo;
     private int cupoActual;

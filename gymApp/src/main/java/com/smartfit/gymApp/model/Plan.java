@@ -1,4 +1,4 @@
-package com.gimnasio.models;
+package com.smartfit.gymApp.model;
 
 //Representa un plan de membresia ofrecido por la sede (ej: mensual, trimestral, anual), con su precio y duracion.
 public class Plan {

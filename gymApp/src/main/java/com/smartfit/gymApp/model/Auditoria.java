@@ -1,4 +1,4 @@
-package com.gimnasio.models;
+package com.smartfit.gymApp.model;
 
 import java.time.LocalDateTime;
 

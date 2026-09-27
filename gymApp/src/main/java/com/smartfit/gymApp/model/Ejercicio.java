@@ -1,5 +1,4 @@
-package com.gimnasio.models;
-
+package com.smartfit.gymApp.model;
 /**
  * Esta clase representa un ejercico dentro de una rutina. Será un elemento
  * clave para agregar ejercicios dentro de una Linked list o una lista doble

@@ -1,5 +1,4 @@
-package com.gimnasio.models;
-
+package com.smartfit.gymApp.model;
 /**
  * Representa a un entrenador de la sede, responsable de dictar clases
  * grupales y de asignar/seguir rutinas de socios.

@@ -1,101 +1,49 @@
-package com.gimnasio.models;
+package com.smartfit.gymApp.model;
 
-/**
- * Representa a un usuario del sistema (personal de la sede: administrador,
- * recepcionista/coordinador o entrenador) que puede iniciar sesion en la app.
- */
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+
+@Entity
+@Table(name = "usuario")
 public class Usuario {
 
-    private int idUsuario;
-    private String nombre;
-    private String apellido;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_usuario")
+    private Long idUsuario;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_cliente")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Cliente cliente;
+
+    @NotBlank
+    @Column(name = "nombre_usuario", unique = true, nullable = false, length = 50)
     private String nombreUsuario;
+
+    @NotBlank
+    @Column(nullable = false, length = 255)
     private String contrasena;
-    private String rol; // ADMINISTRADOR, RECEPCIONISTA, ENTRENADOR
-    private boolean activo;
 
-    public Usuario() {
-    }
+    @Column(nullable = false, length = 30)
+    private String rol = "cliente";
 
-    public Usuario(int idUsuario, String nombre, String apellido, String nombreUsuario,
-                   String contrasena, String rol, boolean activo) {
-        this.idUsuario = idUsuario;
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.nombreUsuario = nombreUsuario;
-        this.contrasena = contrasena;
-        this.rol = rol;
-        this.activo = activo;
-    }
+    @Column(nullable = false)
+    private Boolean estado = true;
 
-    public int getIdUsuario() {
-        return idUsuario;
-    }
+    public Usuario() {}
 
-    public void setIdUsuario(int idUsuario) {
-        this.idUsuario = idUsuario;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
-    }
-
-    public String getNombreUsuario() {
-        return nombreUsuario;
-    }
-
-    public void setNombreUsuario(String nombreUsuario) {
-        this.nombreUsuario = nombreUsuario;
-    }
-
-    public String getContrasena() {
-        return contrasena;
-    }
-
-    public void setContrasena(String contrasena) {
-        this.contrasena = contrasena;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    public boolean isActivo() {
-        return activo;
-    }
-
-    public void setActivo(boolean activo) {
-        this.activo = activo;
-    }
-
-    public String getNombreCompleto() {
-        return nombre + " " + apellido;
-    }
-
-    @Override
-    public String toString() {
-        return "Usuario{" +
-                "idUsuario=" + idUsuario +
-                ", nombreCompleto='" + getNombreCompleto() + '\'' +
-                ", nombreUsuario='" + nombreUsuario + '\'' +
-                ", rol='" + rol + '\'' +
-                ", activo=" + activo +
-                '}';
-    }
+    public Long getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
+    public Cliente getCliente() { return cliente; }
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+    public String getNombreUsuario() { return nombreUsuario; }
+    public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+    public String getContrasena() { return contrasena; }
+    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+    public String getRol() { return rol; }
+    public void setRol(String rol) { this.rol = rol; }
+    public Boolean getEstado() { return estado; }
+    public void setEstado(Boolean estado) { this.estado = estado; }
 }
