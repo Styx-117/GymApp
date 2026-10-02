@@ -1,54 +1,69 @@
 package com.smartfit.gymApp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-
-@Entity
-@Table(name = "usuario")
 public class Usuario {
+    private Long id;
+    private String nombre;
+    private String correo;
+    private String password;
+    private Boolean estado;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario")
-    private Long idUsuario;
+    public Usuario() {
+    }
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_socio")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Socio socio;
+    public Usuario(Long id, String nombre, String correo, String password, Boolean estado) {
+        this.id = id;
+        this.nombre = nombre;
+        this.correo = correo;
+        this.password = password;
+        this.estado = estado;
+    }
 
-    @NotBlank
-    @Column(name = "nombre_usuario", unique = true, nullable = false, length = 50)
-    private String nombreUsuario;
+    public Long getId() {
+        return id;
+    }
 
-    @NotBlank
-    @Column(nullable = false, length = 255)
-    private String contrasena;
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    @Column(nullable = false, length = 30)
-    private String rol = "SOCIO";
+    public String getNombre() {
+        return nombre;
+    }
 
-    @Column(nullable = false)
-    private Boolean estado = true;
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
 
-    public Usuario() {}
+    public String getCorreo() {
+        return correo;
+    }
 
-    public Long getIdUsuario() { return idUsuario; }
-    public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
 
-    public Socio getSocio() { return socio; }
-    public void setSocio(Socio socio) { this.socio = socio; }
+    public String getPassword() {
+        return password;
+    }
 
-    public String getNombreUsuario() { return nombreUsuario; }
-    public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-    public String getContrasena() { return contrasena; }
-    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+    // Métodos alias para compatibilidad
+    public String getContrasena() {
+        return password;
+    }
 
-    public String getRol() { return rol; }
-    public void setRol(String rol) { this.rol = rol; }
+    public void setContrasena(String contrasena) {
+        this.password = contrasena;
+    }
 
-    public Boolean getEstado() { return estado; }
-    public void setEstado(Boolean estado) { this.estado = estado; }
+    public Boolean getEstado() {
+        return estado;
+    }
+
+    public void setEstado(Boolean estado) {
+        this.estado = estado;
+    }
 }

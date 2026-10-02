@@ -13,9 +13,13 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    public List<Usuario> listarTodos() { return usuarioRepository.findAll(); }
+    public List<Usuario> listarTodos() { 
+        return usuarioRepository.findAll(); 
+    }
 
-    public Usuario guardar(Usuario u) { return usuarioRepository.save(u); }
+    public Usuario guardar(Usuario u) { 
+        return usuarioRepository.save(u); 
+    }
 
     public Usuario buscarPorId(Long id) {
         return usuarioRepository.findById(id).orElse(null);
@@ -23,7 +27,8 @@ public class UsuarioService {
 
     public Usuario login(String nombreUsuario, String contrasena) {
         Usuario u = usuarioRepository.findByNombreUsuario(nombreUsuario).orElse(null);
-        if (u != null && u.getContrasena().equals(contrasena) && Boolean.TRUE.equals(u.getEstado())) {
+        if (u != null && u.getContrasena().equals(contrasena)) {
+            // Si tu tabla no usa estado, puedes quitar la validación de estado o dejarla si ya existe
             return u;
         }
         return null;
