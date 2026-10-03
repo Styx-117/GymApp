@@ -51,4 +51,19 @@ public class SocioDAO {
             return false;
         }
     }
+    public boolean eliminarCliente(int idCliente) {
+        String sql = "DELETE FROM cliente WHERE id_cliente = ?";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, idCliente);
+            int filasAfectadas = pstmt.executeUpdate();
+            return filasAfectadas > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error al eliminar el socio: " + e.getMessage());
+            return false;
+        }
+    }
 }

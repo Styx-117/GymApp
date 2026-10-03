@@ -1,13 +1,16 @@
+
 package com.smartfit.gymApp.repository;
 
 import com.smartfit.gymApp.config.ConexionBD;
 import com.smartfit.gymApp.model.Usuario;
+import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class UsuarioRepository {
 
     public boolean verificarCredenciales(String usuario, String password) {

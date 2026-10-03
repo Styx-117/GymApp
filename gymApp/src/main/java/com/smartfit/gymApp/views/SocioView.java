@@ -6,7 +6,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-public class SocioView extends JFrame {
+public class SocioView extends JPanel {
 
     private JTable tablaSocios;
     private DefaultTableModel modeloTabla;
@@ -16,10 +16,6 @@ public class SocioView extends JFrame {
     public SocioView() {
         socioDAO = new SocioDAO();
 
-        setTitle("SmartFit - Gestión de Socios");
-        setSize(950, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         // Panel Principal Oscuro
@@ -27,7 +23,7 @@ public class SocioView extends JFrame {
         mainPanel.setBackground(new Color(25, 25, 35));
 
         // Título Superior
-        JLabel lblTitulo = new JLabel("  Gestión de Socios y Clientes", JLabel.LEFT);
+        JLabel lblTitulo = new JLabel("   Gestión de Socios y Clientes", JLabel.LEFT);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitulo.setForeground(Color.WHITE);
         lblTitulo.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -47,37 +43,68 @@ public class SocioView extends JFrame {
         scrollPane.getViewport().setBackground(new Color(30, 30, 42));
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel Inferior para Registro Rápido
-        JPanel panelFormulario = new JPanel(new GridLayout(2, 6, 10, 10));
-        panelFormulario.setBackground(new Color(30, 30, 42));
-        panelFormulario.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+       
+        // PANEL INFERIOR (Formulario arriba, Botones abajo)
+    
+        JPanel panelInferior = new JPanel(new BorderLayout(10, 10));
+        panelInferior.setBackground(new Color(30, 30, 42));
+        panelInferior.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        // 1. Panel de Formulario (Inputs en la parte superior del panel inferior)
+        JPanel panelFormulario = new JPanel(new GridLayout(2, 5, 10, 5));
+        panelFormulario.setOpaque(false);
 
         txtNombre = new JTextField();
         txtApellido = new JTextField();
         txtDni = new JTextField();
         txtTelefono = new JTextField();
         txtCorreo = new JTextField();
-        JButton btnGuardar = new JButton("Registrar Socio");
-        btnGuardar.setBackground(new Color(255, 204, 0));
-        btnGuardar.setForeground(Color.BLACK);
-        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        panelFormulario.add(new JLabel("<html><font color='white'>Nombre:</font></html>"));
-        panelFormulario.add(new JLabel("<html><font color='white'>Apellido:</font></html>"));
-        panelFormulario.add(new JLabel("<html><font color='white'>DNI:</font></html>"));
-        panelFormulario.add(new JLabel("<html><font color='white'>Teléfono:</font></html>"));
-        panelFormulario.add(new JLabel("<html><font color='white'>Correo:</font></html>"));
-        panelFormulario.add(new JLabel("")); // Espacio vacío
+        // Fila 1: Etiquetas
+        panelFormulario.add(crearLabelForm("Nombre:"));
+        panelFormulario.add(crearLabelForm("Apellido:"));
+        panelFormulario.add(crearLabelForm("DNI:"));
+        panelFormulario.add(crearLabelForm("Teléfono:"));
+        panelFormulario.add(crearLabelForm("Correo:"));
 
+        // Fila 2: Campos de texto
         panelFormulario.add(txtNombre);
         panelFormulario.add(txtApellido);
         panelFormulario.add(txtDni);
         panelFormulario.add(txtTelefono);
         panelFormulario.add(txtCorreo);
-        panelFormulario.add(btnGuardar);
 
-        mainPanel.add(panelFormulario, BorderLayout.SOUTH);
-        add(mainPanel);
+        panelInferior.add(panelFormulario, BorderLayout.CENTER);
+
+        // 2. Panel de Botones (Colocados abajo, alineados a la derecha de forma segura)
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        panelBotones.setOpaque(false);
+
+        JButton btnGuardar = new JButton("Registrar Socio");
+        btnGuardar.setBackground(new Color(255, 204, 0));
+        btnGuardar.setForeground(Color.BLACK);
+        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnGuardar.setFocusPainted(false);
+        btnGuardar.setOpaque(true);
+        btnGuardar.setBorderPainted(false);
+        btnGuardar.setPreferredSize(new Dimension(140, 35));
+
+        JButton btnEliminar = new JButton("Eliminar Socio");
+        btnEliminar.setBackground(new Color(220, 50, 50));
+        btnEliminar.setForeground(Color.WHITE);
+        btnEliminar.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnEliminar.setFocusPainted(false);
+        btnEliminar.setOpaque(true);
+        btnEliminar.setBorderPainted(false);
+        btnEliminar.setPreferredSize(new Dimension(140, 35));
+
+        panelBotones.add(btnGuardar);
+        panelBotones.add(btnEliminar);
+
+        panelInferior.add(panelBotones, BorderLayout.SOUTH);
+
+        mainPanel.add(panelInferior, BorderLayout.SOUTH);
+        add(mainPanel, BorderLayout.CENTER);
 
         // Cargar datos al iniciar
         cargarDatosTabla();
@@ -104,10 +131,49 @@ public class SocioView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Error al registrar socio (verifique si el DNI ya existe).", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
+
+        // Evento del Botón Eliminar
+        btnEliminar.addActionListener(e -> {
+            int filaSeleccionada = tablaSocios.getSelectedRow();
+            if (filaSeleccionada >= 0) {
+                int confirmacion = JOptionPane.showConfirmDialog(
+                    this, 
+                    "¿Estás seguro de eliminar el socio seleccionado?", 
+                    "Confirmar eliminación", 
+                    JOptionPane.YES_NO_OPTION
+                );
+                
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    int idSocio = Integer.parseInt(tablaSocios.getValueAt(filaSeleccionada, 0).toString());
+                    boolean eliminado = socioDAO.eliminarCliente(idSocio);
+                    
+                    if (eliminado) {
+                        JOptionPane.showMessageDialog(this, "Socio eliminado correctamente.");
+                        cargarDatosTabla();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No se pudo eliminar el socio.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(
+                    this, 
+                    "Por favor selecciona un socio de la tabla para eliminar.", 
+                    "Aviso", 
+                    JOptionPane.WARNING_MESSAGE
+                );
+            }
+        });
+    }
+
+    private JLabel crearLabelForm(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setForeground(Color.WHITE);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        return lbl;
     }
 
     private void cargarDatosTabla() {
-        modeloTabla.setRowCount(0); // Limpiar tabla
+        modeloTabla.setRowCount(0);
         List<String[]> socios = socioDAO.obtenerClientes();
         for (String[] socio : socios) {
             modeloTabla.addRow(socio);

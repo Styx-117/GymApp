@@ -42,9 +42,7 @@ public class LoginView extends JFrame {
         };
         backgroundPanel.setLayout(null);
 
-        // ==========================================
-        // SECCIÓN IZQUIERDA: Bienvenida y Marca
-        // ==========================================
+       
         JLabel lblBienvenido = new JLabel("¡Bienvenido!");
         lblBienvenido.setFont(new Font("Segoe UI", Font.BOLD, 44));
         lblBienvenido.setForeground(Color.WHITE);
@@ -64,9 +62,7 @@ public class LoginView extends JFrame {
         lblBadge.setBounds(60, 75, 200, 20);
         backgroundPanel.add(lblBadge);
 
-        // ==========================================
-        // SECCIÓN DERECHA: Tarjeta de Inicio de Sesión
-        // ==========================================
+       
         JPanel cardPanel = new JPanel();
         cardPanel.setBackground(new Color(30, 30, 42)); // Tarjeta sólida elegante
         cardPanel.setBounds(480, 60, 360, 415);
@@ -185,5 +181,8 @@ public class LoginView extends JFrame {
         SwingUtilities.invokeLater(() -> {
             new LoginView().setVisible(true);
         });
+   
+   
     }
+
 }
