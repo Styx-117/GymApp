@@ -70,8 +70,10 @@ public class MainDashboardView extends JFrame {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "INICIO"));
             } else if (opcion.contains("Gestión de Socios")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "SOCIOS"));
-            } else if (opcion.contains("Entrenadores")) {
+           } else if (opcion.contains("Entrenadores")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "ENTRENADORES"));
+            } else if (opcion.contains("Rutinas y Clases")) {
+                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "CLASES"));
             } else if (opcion.contains("Cerrar Sesión")) {
                 btnMenu.addActionListener(e -> {
                     dispose();
@@ -92,10 +94,12 @@ public class MainDashboardView extends JFrame {
         JPanel panelInicio = crearPanelInicio(usuarioLogueado);
         SocioView panelSocios = new SocioView();
         JPanel panelEntrenadores = crearPanelEntrenadores();
+        ClaseView panelClases = new ClaseView();
 
         contentPanel.add(panelInicio, "INICIO");
         contentPanel.add(panelSocios, "SOCIOS");
         contentPanel.add(panelEntrenadores, "ENTRENADORES");
+        contentPanel.add(panelClases, "CLASES");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
@@ -164,7 +168,7 @@ public class MainDashboardView extends JFrame {
         return card;
     }
 
-    // 4. PANEL DE ENTRENADORES
+// 4. PANEL DE ENTRENADORES (Diseño idéntico a Socios y Clases)
     private JPanel crearPanelEntrenadores() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(new Color(25, 25, 35));
@@ -182,7 +186,12 @@ public class MainDashboardView extends JFrame {
 
         // Columnas de la tabla
         String[] columnas = { "ID", "Nombre", "Apellido", "Especialidad", "Teléfono" };
-        javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(columnas, 0);
+        javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; 
+            }
+        };
         JTable tablaEntrenadores = new JTable(modelo);
 
         tablaEntrenadores.setRowHeight(25);
@@ -190,8 +199,10 @@ public class MainDashboardView extends JFrame {
         tablaEntrenadores.setGridColor(new Color(50, 50, 60));
         tablaEntrenadores.setBackground(new Color(30, 30, 40));
         tablaEntrenadores.setForeground(Color.WHITE);
+        tablaEntrenadores.setSelectionBackground(new Color(255, 204, 0));
+        tablaEntrenadores.setSelectionForeground(Color.BLACK);
 
-        // Estilo de la cabecera
+        // Estilo de la cabecera idéntico al resto
         javax.swing.table.JTableHeader header = tablaEntrenadores.getTableHeader();
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
         header.setPreferredSize(new Dimension(header.getWidth(), 30));
@@ -214,26 +225,29 @@ public class MainDashboardView extends JFrame {
         scrollPane.getViewport().setBackground(new Color(30, 30, 40));
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel inferior idéntico al diseño de socios (Inputs arriba, Botones abajo a
-        // la derecha)
+        // ==========================================
+        // PANEL INFERIOR (Formulario y Botones)
+        // ==========================================
         JPanel panelSur = new JPanel(new BorderLayout(0, 10));
         panelSur.setOpaque(false);
         panelSur.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
 
-        // Subpanel para etiquetas y campos distribuidos en 4 columnas
+        // Subpanel de campos con GridLayout de 2 filas y 4 columnas
         JPanel panelCampos = new JPanel(new GridLayout(2, 4, 15, 5));
         panelCampos.setOpaque(false);
-
-        panelCampos.add(crearLabelForm("Nombre:"));
-        panelCampos.add(crearLabelForm("Apellido:"));
-        panelCampos.add(crearLabelForm("Especialidad:"));
-        panelCampos.add(crearLabelForm("Teléfono:"));
 
         JTextField txtNombre = new JTextField();
         JTextField txtApellido = new JTextField();
         JTextField txtEspecialidad = new JTextField();
         JTextField txtTelefono = new JTextField();
 
+        // Fila 1: Etiquetas estilizadas en blanco
+        panelCampos.add(crearLabelFormEstilo("Nombre:"));
+        panelCampos.add(crearLabelFormEstilo("Apellido:"));
+        panelCampos.add(crearLabelFormEstilo("Especialidad:"));
+        panelCampos.add(crearLabelFormEstilo("Teléfono:"));
+
+        // Fila 2: Cuadros de texto blancos limpios
         panelCampos.add(txtNombre);
         panelCampos.add(txtApellido);
         panelCampos.add(txtEspecialidad);
@@ -241,9 +255,10 @@ public class MainDashboardView extends JFrame {
 
         panelSur.add(panelCampos, BorderLayout.CENTER);
 
-        // Subpanel de botones (Registrar y Eliminar alineados a la derecha)
+        // Subpanel de botones (Registrar y Eliminar) alineados a la derecha
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelBotones.setOpaque(false);
+        
         JButton btnRegistrar = new JButton("Registrar Entrenador");
         btnRegistrar.setBackground(new Color(255, 204, 0));
         btnRegistrar.setForeground(Color.BLACK);
@@ -251,7 +266,7 @@ public class MainDashboardView extends JFrame {
         btnRegistrar.setFocusPainted(false);
         btnRegistrar.setOpaque(true);
         btnRegistrar.setBorderPainted(false);
-        btnRegistrar.setPreferredSize(new Dimension(160, 30));
+        btnRegistrar.setPreferredSize(new Dimension(170, 35));
 
         JButton btnEliminar = new JButton("Eliminar Entrenador");
         btnEliminar.setBackground(new Color(220, 53, 69));
@@ -260,17 +275,18 @@ public class MainDashboardView extends JFrame {
         btnEliminar.setFocusPainted(false);
         btnEliminar.setOpaque(true);
         btnEliminar.setBorderPainted(false);
-        btnEliminar.setPreferredSize(new Dimension(160, 30));
+        btnEliminar.setPreferredSize(new Dimension(170, 35));
+        
         panelBotones.add(btnRegistrar);
         panelBotones.add(btnEliminar);
 
         panelSur.add(panelBotones, BorderLayout.SOUTH);
         panel.add(panelSur, BorderLayout.SOUTH);
 
-        // Instancia del DAO para interactuar con PostgreSQL
+        // Instancia del DAO
         com.smartfit.gymApp.repository.EntrenadorDAO entrenadorDAO = new com.smartfit.gymApp.repository.EntrenadorDAO();
 
-        // Función para cargar los datos en la tabla
+        // Función para cargar datos en la tabla
         Runnable cargarDatos = () -> {
             modelo.setRowCount(0);
             java.util.List<com.smartfit.gymApp.model.Entrenador> lista = entrenadorDAO.obtenerEntrenadores();
@@ -286,7 +302,6 @@ public class MainDashboardView extends JFrame {
             }
         };
 
-        // Cargar datos al abrir el panel
         cargarDatos.run();
 
         // Acción del botón Registrar
@@ -316,7 +331,7 @@ public class MainDashboardView extends JFrame {
             }
         });
 
-        // Acción del botón Eliminar (selecciona la fila de la tabla)
+        // Acción del botón Eliminar
         btnEliminar.addActionListener(e -> {
             int filaSeleccionada = tablaEntrenadores.getSelectedRow();
             if (filaSeleccionada == -1) {
@@ -326,12 +341,11 @@ public class MainDashboardView extends JFrame {
             }
 
             int idEntrenador = (int) modelo.getValueAt(filaSeleccionada, 0);
-            String nombreEntrenador = modelo.getValueAt(filaSeleccionada, 1) + " "
-                    + modelo.getValueAt(filaSeleccionada, 2);
+            String nombreEntrenador = modelo.getValueAt(filaSeleccionada, 1) + " " + modelo.getValueAt(filaSeleccionada, 2);
 
             int confirmacion = JOptionPane.showConfirmDialog(
                     panel,
-                    "¿Estás seguro de eliminar al entrenador " + nombreEntrenador + "?",
+                    "¿Estás seguro de eliminar a " + nombreEntrenador + "?",
                     "Confirmar Eliminación",
                     JOptionPane.YES_NO_OPTION);
 
@@ -342,20 +356,19 @@ public class MainDashboardView extends JFrame {
                     cargarDatos.run();
                 } else {
                     JOptionPane.showMessageDialog(panel, "Error al eliminar el entrenador de la base de datos.",
-                            "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
         return panel;
-
     }
 
-    // Método auxiliar para las etiquetas del formulario
-    private JLabel crearLabelForm(String texto) {
-        JLabel lbl = new JLabel(texto);
-        lbl.setForeground(Color.WHITE);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        return lbl;
+    // Método auxiliar para mantener las letras de las etiquetas blancas y consistentes
+    private JLabel crearLabelFormEstilo(String texto) {
+        JLabel label = new JLabel(texto);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        return label;
     }
 }
