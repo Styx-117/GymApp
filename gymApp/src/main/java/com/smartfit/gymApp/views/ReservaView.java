@@ -52,8 +52,10 @@ public class ReservaView extends JPanel {
         f2.add(UI.etiqueta("Código socio:"));
         f2.add(txtSocio);
         JButton btnReservar = UI.boton("Reservar");
+        JButton btnActualizar = UI.boton("Actualizar socio");
         JButton btnCancelar = UI.boton("Cancelar reserva");
         f2.add(btnReservar);
+        f2.add(btnActualizar);
         f2.add(btnCancelar);
         JPanel f3 = UI.fila();
         f3.add(lblCupo);
@@ -64,6 +66,7 @@ public class ReservaView extends JPanel {
 
         btnClase.addActionListener(e -> crearClase());
         btnReservar.addActionListener(e -> reservar());
+        btnActualizar.addActionListener(e -> actualizar());
         btnCancelar.addActionListener(e -> cancelar());
         cmbClase.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -134,6 +137,28 @@ public class ReservaView extends JPanel {
             ReservaClase p = servicio.gestorDe(c.getIdClase()).getUltimaPromovida();
             if (p != null) UI.info(this, "Se liberó un cupo: " + p.getCodigoSocio() + " pasó de la espera a confirmado.");
         }
+        txtSocio.setText("");
+        refrescar();
+    }
+
+    private void actualizar() {
+        Clase clase = claseElegida();
+        String codigoActual = codigoSocio();
+        if (clase == null || codigoActual == null) return;
+
+        String codigoNuevo = JOptionPane.showInputDialog(this,
+                "Ingrese el código de socio nuevo para esta reserva:", codigoActual);
+        if (codigoNuevo == null) return;
+        codigoNuevo = codigoNuevo.trim().toUpperCase();
+        if (codigoNuevo.isEmpty()) {
+            UI.aviso(this, "El código del socio no puede estar vacío.");
+            return;
+        }
+        if (!servicio.actualizarCodigoSocio(clase.getIdClase(), codigoActual, codigoNuevo)) {
+            UI.aviso(this, "No se encontró la reserva o el nuevo socio ya está inscrito en esta clase.");
+            return;
+        }
+        UI.info(this, "Reserva actualizada correctamente.");
         txtSocio.setText("");
         refrescar();
     }

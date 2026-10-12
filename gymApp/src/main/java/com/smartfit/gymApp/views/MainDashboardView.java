@@ -32,20 +32,23 @@ public class MainDashboardView extends JFrame {
         panelLogo.add(lblLogo);
         sidebar.add(panelLogo, BorderLayout.NORTH);
 
-        JPanel panelBotonesMenu = new JPanel(new GridLayout(5, 1, 0, 10));
+        JPanel panelBotonesMenu = new JPanel(new GridLayout(0, 1, 0, 8));
         panelBotonesMenu.setOpaque(false);
         panelBotonesMenu.setBorder(BorderFactory.createEmptyBorder(10, 15, 20, 15));
 
         String[] opciones = {
-                "   🏠   Inicio",
-                "   👥   Gestión de Socios",
-                "   💪   Entrenadores",
-                "   📋   Rutinas y Clases",
-                "   🚪   Cerrar Sesión"
+                "Inicio",
+                "Gestión de Socios",
+                "Entrenadores",
+                "Clases",
+                "Reservas",
+                "Incidencias",
+                "Auditoría",
+                "Cerrar Sesión"
         };
 
         for (String opcion : opciones) {
-            JButton btnMenu = new JButton(opcion);
+            JButton btnMenu = new JButton("   " + opcion);
             btnMenu.setFont(new Font("Dialog", Font.BOLD, 13));
             btnMenu.setForeground(Color.WHITE);
             btnMenu.setBackground(new Color(15, 15, 18));
@@ -66,15 +69,21 @@ public class MainDashboardView extends JFrame {
                 }
             });
 
-            if (opcion.contains("Inicio")) {
+            if (opcion.equals("Inicio")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "INICIO"));
-            } else if (opcion.contains("Gestión de Socios")) {
+            } else if (opcion.equals("Gestión de Socios")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "SOCIOS"));
-           } else if (opcion.contains("Entrenadores")) {
+            } else if (opcion.equals("Entrenadores")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "ENTRENADORES"));
-            } else if (opcion.contains("Rutinas y Clases")) {
+            } else if (opcion.equals("Clases")) {
                 btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "CLASES"));
-            } else if (opcion.contains("Cerrar Sesión")) {
+            } else if (opcion.equals("Reservas")) {
+                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "RESERVAS"));
+            } else if (opcion.equals("Incidencias")) {
+                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "INCIDENCIAS"));
+            } else if (opcion.equals("Auditoría")) {
+                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "AUDITORIA"));
+            } else if (opcion.equals("Cerrar Sesión")) {
                 btnMenu.addActionListener(e -> {
                     dispose();
                     new LoginView().setVisible(true);
@@ -93,13 +102,19 @@ public class MainDashboardView extends JFrame {
 
         JPanel panelInicio = crearPanelInicio(usuarioLogueado);
         SocioView panelSocios = new SocioView();
-        JPanel panelEntrenadores = crearPanelEntrenadores();
+        EntrenadorView panelEntrenadores = new EntrenadorView();
         ClaseView panelClases = new ClaseView();
+        ReservaView panelReservas = new ReservaView();
+        IncidenciaView panelIncidencias = new IncidenciaView();
+        AuditoriaView panelAuditoria = new AuditoriaView();
 
         contentPanel.add(panelInicio, "INICIO");
         contentPanel.add(panelSocios, "SOCIOS");
         contentPanel.add(panelEntrenadores, "ENTRENADORES");
         contentPanel.add(panelClases, "CLASES");
+        contentPanel.add(panelReservas, "RESERVAS");
+        contentPanel.add(panelIncidencias, "INCIDENCIAS");
+        contentPanel.add(panelAuditoria, "AUDITORIA");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
@@ -166,209 +181,5 @@ public class MainDashboardView extends JFrame {
         card.add(lblValueCard, BorderLayout.CENTER);
 
         return card;
-    }
-
-// 4. PANEL DE ENTRENADORES (Diseño idéntico a Socios y Clases)
-    private JPanel crearPanelEntrenadores() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(new Color(25, 25, 35));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-
-        // Título superior
-        JLabel lblTitulo = new JLabel("Gestión de Entrenadores");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitulo.setForeground(Color.WHITE);
-
-        JPanel panelNorte = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        panelNorte.setOpaque(false);
-        panelNorte.add(lblTitulo);
-        panel.add(panelNorte, BorderLayout.NORTH);
-
-        // Columnas de la tabla
-        String[] columnas = { "ID", "Nombre", "Apellido", "Especialidad", "Teléfono" };
-        javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
-            }
-        };
-        JTable tablaEntrenadores = new JTable(modelo);
-
-        tablaEntrenadores.setRowHeight(25);
-        tablaEntrenadores.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tablaEntrenadores.setGridColor(new Color(50, 50, 60));
-        tablaEntrenadores.setBackground(new Color(30, 30, 40));
-        tablaEntrenadores.setForeground(Color.WHITE);
-        tablaEntrenadores.setSelectionBackground(new Color(255, 204, 0));
-        tablaEntrenadores.setSelectionForeground(Color.BLACK);
-
-        // Estilo de la cabecera idéntico al resto
-        javax.swing.table.JTableHeader header = tablaEntrenadores.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        header.setPreferredSize(new Dimension(header.getWidth(), 30));
-        header.setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                    boolean hasFocus, int row, int column) {
-                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
-                        column);
-                label.setBackground(new Color(40, 40, 50));
-                label.setForeground(Color.WHITE);
-                label.setFont(new Font("Segoe UI", Font.BOLD, 13));
-                label.setHorizontalAlignment(JLabel.CENTER);
-                label.setOpaque(true);
-                return label;
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(tablaEntrenadores);
-        scrollPane.getViewport().setBackground(new Color(30, 30, 40));
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        // ==========================================
-        // PANEL INFERIOR (Formulario y Botones)
-        // ==========================================
-        JPanel panelSur = new JPanel(new BorderLayout(0, 10));
-        panelSur.setOpaque(false);
-        panelSur.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
-
-        // Subpanel de campos con GridLayout de 2 filas y 4 columnas
-        JPanel panelCampos = new JPanel(new GridLayout(2, 4, 15, 5));
-        panelCampos.setOpaque(false);
-
-        JTextField txtNombre = new JTextField();
-        JTextField txtApellido = new JTextField();
-        JTextField txtEspecialidad = new JTextField();
-        JTextField txtTelefono = new JTextField();
-
-        // Fila 1: Etiquetas estilizadas en blanco
-        panelCampos.add(crearLabelFormEstilo("Nombre:"));
-        panelCampos.add(crearLabelFormEstilo("Apellido:"));
-        panelCampos.add(crearLabelFormEstilo("Especialidad:"));
-        panelCampos.add(crearLabelFormEstilo("Teléfono:"));
-
-        // Fila 2: Cuadros de texto blancos limpios
-        panelCampos.add(txtNombre);
-        panelCampos.add(txtApellido);
-        panelCampos.add(txtEspecialidad);
-        panelCampos.add(txtTelefono);
-
-        panelSur.add(panelCampos, BorderLayout.CENTER);
-
-        // Subpanel de botones (Registrar y Eliminar) alineados a la derecha
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panelBotones.setOpaque(false);
-        
-        JButton btnRegistrar = new JButton("Registrar Entrenador");
-        btnRegistrar.setBackground(new Color(255, 204, 0));
-        btnRegistrar.setForeground(Color.BLACK);
-        btnRegistrar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnRegistrar.setFocusPainted(false);
-        btnRegistrar.setOpaque(true);
-        btnRegistrar.setBorderPainted(false);
-        btnRegistrar.setPreferredSize(new Dimension(170, 35));
-
-        JButton btnEliminar = new JButton("Eliminar Entrenador");
-        btnEliminar.setBackground(new Color(220, 53, 69));
-        btnEliminar.setForeground(Color.WHITE);
-        btnEliminar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnEliminar.setFocusPainted(false);
-        btnEliminar.setOpaque(true);
-        btnEliminar.setBorderPainted(false);
-        btnEliminar.setPreferredSize(new Dimension(170, 35));
-        
-        panelBotones.add(btnRegistrar);
-        panelBotones.add(btnEliminar);
-
-        panelSur.add(panelBotones, BorderLayout.SOUTH);
-        panel.add(panelSur, BorderLayout.SOUTH);
-
-        // Instancia del DAO
-        com.smartfit.gymApp.repository.EntrenadorDAO entrenadorDAO = new com.smartfit.gymApp.repository.EntrenadorDAO();
-
-        // Función para cargar datos en la tabla
-        Runnable cargarDatos = () -> {
-            modelo.setRowCount(0);
-            java.util.List<com.smartfit.gymApp.model.Entrenador> lista = entrenadorDAO.obtenerEntrenadores();
-            for (com.smartfit.gymApp.model.Entrenador e : lista) {
-                Object[] fila = {
-                        e.getIdEntrenador(),
-                        e.getNombre(),
-                        e.getApellido(),
-                        e.getEspecialidad(),
-                        e.getTelefono()
-                };
-                modelo.addRow(fila);
-            }
-        };
-
-        cargarDatos.run();
-
-        // Acción del botón Registrar
-        btnRegistrar.addActionListener(e -> {
-            String nombre = txtNombre.getText().trim();
-            String apellido = txtApellido.getText().trim();
-            String especialidad = txtEspecialidad.getText().trim();
-            String telefono = txtTelefono.getText().trim();
-
-            if (nombre.isEmpty() || apellido.isEmpty() || especialidad.isEmpty() || telefono.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "Por favor, completa todos los campos.", "Advertencia",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            boolean exito = entrenadorDAO.registrarEntrenador(nombre, apellido, especialidad, telefono);
-            if (exito) {
-                JOptionPane.showMessageDialog(panel, "¡Entrenador registrado con éxito!");
-                txtNombre.setText("");
-                txtApellido.setText("");
-                txtEspecialidad.setText("");
-                txtTelefono.setText("");
-                cargarDatos.run();
-            } else {
-                JOptionPane.showMessageDialog(panel, "Error al registrar en la base de datos.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        // Acción del botón Eliminar
-        btnEliminar.addActionListener(e -> {
-            int filaSeleccionada = tablaEntrenadores.getSelectedRow();
-            if (filaSeleccionada == -1) {
-                JOptionPane.showMessageDialog(panel, "Por favor, selecciona un entrenador de la tabla para eliminar.",
-                        "Advertencia", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int idEntrenador = (int) modelo.getValueAt(filaSeleccionada, 0);
-            String nombreEntrenador = modelo.getValueAt(filaSeleccionada, 1) + " " + modelo.getValueAt(filaSeleccionada, 2);
-
-            int confirmacion = JOptionPane.showConfirmDialog(
-                    panel,
-                    "¿Estás seguro de eliminar a " + nombreEntrenador + "?",
-                    "Confirmar Eliminación",
-                    JOptionPane.YES_NO_OPTION);
-
-            if (confirmacion == JOptionPane.YES_OPTION) {
-                boolean exito = entrenadorDAO.eliminarEntrenador(idEntrenador);
-                if (exito) {
-                    JOptionPane.showMessageDialog(panel, "¡Entrenador eliminado con éxito!");
-                    cargarDatos.run();
-                } else {
-                    JOptionPane.showMessageDialog(panel, "Error al eliminar el entrenador de la base de datos.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        return panel;
-    }
-
-    // Método auxiliar para mantener las letras de las etiquetas blancas y consistentes
-    private JLabel crearLabelFormEstilo(String texto) {
-        JLabel label = new JLabel(texto);
-        label.setForeground(Color.WHITE);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        return label;
     }
 }

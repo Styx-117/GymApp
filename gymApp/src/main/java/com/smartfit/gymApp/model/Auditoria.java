@@ -17,7 +17,7 @@ public class Auditoria {
 
 
     public Auditoria(int idAuditoria, int idUsuario, String accion,
-                      LocalDateTime fechaHora, String detalle) {
+                    LocalDateTime fechaHora, String detalle) {
         this.idAuditoria = idAuditoria;
         this.idUsuario = idUsuario;
         this.accion = accion;

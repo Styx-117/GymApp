@@ -58,8 +58,28 @@ public class EntrenadorDAO {
         }
     }
 
+    public boolean actualizarEntrenador(int idEntrenador, String nombre, String apellido,
+                                        String especialidad, String telefono) {
+        String sql = "UPDATE entrenador SET nombre = ?, apellido = ?, especialidad = ?, telefono = ? "
+                + "WHERE id_entrenador = ? AND activo = true";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, nombre);
+            pstmt.setString(2, apellido);
+            pstmt.setString(3, especialidad);
+            pstmt.setString(4, telefono);
+            pstmt.setInt(5, idEntrenador);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar entrenador: " + e.getMessage());
+            return false;
+        }
+    }
+
     public boolean eliminarEntrenador(int idEntrenador) {
-        String sql = "DELETE FROM entrenador WHERE id_entrenador = ?";
+        String sql = "UPDATE entrenador SET activo = false WHERE id_entrenador = ? AND activo = true";
 
         try (Connection conn = ConexionBD.conectar();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {

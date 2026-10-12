@@ -1,5 +1,6 @@
 package com.smartfit.gymApp.views;
 
+import com.smartfit.gymApp.GymAppApplication;
 import com.smartfit.gymApp.repository.UsuarioRepository;
 
 import javax.swing.*;
@@ -42,7 +43,7 @@ public class LoginView extends JFrame {
         };
         backgroundPanel.setLayout(null);
 
-       
+
         JLabel lblBienvenido = new JLabel("¡Bienvenido!");
         lblBienvenido.setFont(new Font("Segoe UI", Font.BOLD, 44));
         lblBienvenido.setForeground(Color.WHITE);
@@ -177,12 +178,7 @@ public class LoginView extends JFrame {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
-
-        SwingUtilities.invokeLater(() -> {
-            new LoginView().setVisible(true);
-        });
-   
-   
+        GymAppApplication.main(args);
     }
 
 }

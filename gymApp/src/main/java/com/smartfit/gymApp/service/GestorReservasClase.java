@@ -67,6 +67,23 @@ public class GestorReservasClase implements Comparable<GestorReservasClase> {
         return cancelada;
     }
 
+    public boolean actualizarCodigoSocio(String codigoActual, String codigoNuevo) {
+        if (codigoActual == null || codigoActual.isBlank()
+                || codigoNuevo == null || codigoNuevo.isBlank()
+                || (!codigoActual.equals(codigoNuevo) && estaInscrito(codigoNuevo))) {
+            return false;
+        }
+        ReservaClase reserva = confirmadas.buscar(r -> r.getCodigoSocio().equals(codigoActual));
+        if (reserva == null) {
+            reserva = listaEspera.buscar(r -> r.getCodigoSocio().equals(codigoActual));
+        }
+        if (reserva == null) {
+            return false;
+        }
+        reserva.setCodigoSocio(codigoNuevo);
+        return true;
+    }
+
     private void renumerarEspera() {
         int[] pos = {1};
         listaEspera.recorrer(r -> r.setPosicionListaEspera(pos[0]++));

@@ -5,6 +5,8 @@ import com.smartfit.gymApp.structures.colas.Cola;
 import com.smartfit.gymApp.structures.colas.ColaPrioridad;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class IncidenciaService {
@@ -46,6 +48,53 @@ public class IncidenciaService {
         AuditoriaService.getInstance().registrar("ATENDER_INCIDENCIA",
                 "#" + inc.getIdIncidencia() + " equipo " + inc.getCodigoEquipo());
         return inc;
+    }
+
+    public boolean actualizarPendiente(int id, String codigoEquipo, String descripcion, int prioridad) {
+        if (codigoEquipo == null || codigoEquipo.isBlank() || descripcion == null || descripcion.isBlank()
+                || prioridad < 1 || prioridad > 3) {
+            return false;
+        }
+        Incidencia incidencia = quitarPendiente(id);
+        if (incidencia == null) {
+            return false;
+        }
+        incidencia.setCodigoEquipo(codigoEquipo);
+        incidencia.setDescripcion(descripcion);
+        incidencia.setPrioridad(prioridad);
+        pendientes.encolar(incidencia);
+        AuditoriaService.getInstance().registrar("ACTUALIZAR_INCIDENCIA",
+                "#" + id + " equipo " + codigoEquipo + " prioridad " + prioridad);
+        return true;
+    }
+
+    public boolean eliminarPendiente(int id) {
+        Incidencia incidencia = quitarPendiente(id);
+        if (incidencia == null) {
+            return false;
+        }
+        AuditoriaService.getInstance().registrar("ELIMINAR_INCIDENCIA", "#" + id);
+        return true;
+    }
+
+    private Incidencia quitarPendiente(int id) {
+        List<Incidencia> incidencias = new ArrayList<>();
+        pendientes.recorrer(incidencias::add);
+        Incidencia seleccionada = incidencias.stream()
+                .filter(i -> i.getIdIncidencia() == id)
+                .findFirst()
+                .orElse(null);
+        if (seleccionada == null) {
+            return null;
+        }
+
+        pendientes.vaciar();
+        for (Incidencia incidencia : incidencias) {
+            if (incidencia != seleccionada) {
+                pendientes.encolar(incidencia);
+            }
+        }
+        return seleccionada;
     }
 
     public Incidencia verSiguiente() {

@@ -14,7 +14,9 @@ public class AuditoriaView extends JPanel {
     private final JTextArea txtPila = UI.areaSalida();
     private final JComboBox<String> cmbAccion = new JComboBox<>(new String[]{
             "REGISTRAR_SOCIO", "ACTUALIZAR_SOCIO", "ELIMINAR_SOCIO",
-            "RESERVAR_CLASE", "CANCELAR_RESERVA", "REGISTRAR_INCIDENCIA"});
+            "RESERVAR_CLASE", "ACTUALIZAR_RESERVA", "CANCELAR_RESERVA",
+            "REGISTRAR_INCIDENCIA", "ACTUALIZAR_INCIDENCIA", "ELIMINAR_INCIDENCIA",
+            "ATENDER_INCIDENCIA"});
     private final JTextField txtDetalle = UI.campo(20);
 
     public AuditoriaView() {

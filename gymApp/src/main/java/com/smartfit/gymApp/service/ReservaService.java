@@ -67,6 +67,16 @@ public class ReservaService {
         return r;
     }
 
+    public boolean actualizarCodigoSocio(int idClase, String codigoActual, String codigoNuevo) {
+        GestorReservasClase gestor = gestorDe(idClase);
+        if (gestor == null || !gestor.actualizarCodigoSocio(codigoActual, codigoNuevo)) {
+            return false;
+        }
+        AuditoriaService.getInstance().registrar("ACTUALIZAR_RESERVA",
+                codigoActual + " -> " + codigoNuevo + " en clase " + idClase);
+        return true;
+    }
+
     public ABB<GestorReservasClase> getGestores() {
         return gestores;
     }

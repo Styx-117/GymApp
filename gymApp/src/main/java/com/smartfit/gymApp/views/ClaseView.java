@@ -27,7 +27,8 @@ public class ClaseView extends JPanel {
         add(lblTitulo, BorderLayout.NORTH);
 
        
-        String[] columnas = {"ID", "Nombre", "Entrenador", "Día", "Inicio", "Fin", "Cupo Máx", "Cupo Actual"};
+        String[] columnas = {"ID", "Nombre", "Entrenador", "Día", "Inicio", "Fin", "Cupo Máx", "Cupo Actual",
+                "ID entrenador"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -37,6 +38,7 @@ public class ClaseView extends JPanel {
         
         tablaClases = new JTable(modeloTabla);
         tablaClases.setRowHeight(25);
+        tablaClases.removeColumn(tablaClases.getColumnModel().getColumn(8));
         
      
         JScrollPane scrollPane = new JScrollPane(tablaClases);
@@ -103,7 +105,13 @@ JButton btnRegistrar = new JButton("Registrar Clase");
         btnEliminar.setBorderPainted(false); 
         btnEliminar.setPreferredSize(new Dimension(140, 35)); 
         btnEliminar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        JButton btnActualizar = new JButton("Guardar cambios");
+        btnActualizar.setBackground(new Color(70, 130, 180));
+        btnActualizar.setForeground(Color.WHITE);
+        btnActualizar.setFocusPainted(false);
+        btnActualizar.setPreferredSize(new Dimension(150, 35));
         panelBotones.add(btnRegistrar);
+        panelBotones.add(btnActualizar);
         panelBotones.add(btnEliminar);
 
         panelInferior.add(panelBotones, BorderLayout.SOUTH);
@@ -112,9 +120,22 @@ JButton btnRegistrar = new JButton("Registrar Clase");
         // Cargar datos iniciales
         cargarDatosClases();
 
+        tablaClases.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && tablaClases.getSelectedRow() >= 0) {
+                int fila = tablaClases.convertRowIndexToModel(tablaClases.getSelectedRow());
+                txtNombre.setText(String.valueOf(modeloTabla.getValueAt(fila, 1)));
+                txtEntrenadorId.setText(String.valueOf(modeloTabla.getValueAt(fila, 8)));
+                txtDia.setText(String.valueOf(modeloTabla.getValueAt(fila, 3)));
+                txtHoraInicio.setText(String.valueOf(modeloTabla.getValueAt(fila, 4)).substring(0, 5));
+                txtHoraFin.setText(String.valueOf(modeloTabla.getValueAt(fila, 5)).substring(0, 5));
+                txtCupoMax.setText(String.valueOf(modeloTabla.getValueAt(fila, 6)));
+            }
+        });
+
         // Acciones de los botones
         btnRegistrar.addActionListener(e -> registrarClase());
         btnEliminar.addActionListener(e -> eliminarClase());
+        btnActualizar.addActionListener(e -> actualizarClase());
     }
 
     private JLabel crearLabelCampo(String texto) {
@@ -170,6 +191,43 @@ JButton btnRegistrar = new JButton("Registrar Clase");
             }
         } else {
             JOptionPane.showMessageDialog(this, "Seleccione una clase de la tabla para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void actualizarClase() {
+        int fila = tablaClases.getSelectedRow();
+        if (fila < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione una clase para actualizar.",
+                    "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            int filaModelo = tablaClases.convertRowIndexToModel(fila);
+            int id = Integer.parseInt(String.valueOf(modeloTabla.getValueAt(filaModelo, 0)));
+            String nombre = txtNombre.getText().trim();
+            int entrenadorId = Integer.parseInt(txtEntrenadorId.getText().trim());
+            String dia = txtDia.getText().trim();
+            Time inicio = Time.valueOf(txtHoraInicio.getText().trim() + ":00");
+            Time fin = Time.valueOf(txtHoraFin.getText().trim() + ":00");
+            int cupo = Integer.parseInt(txtCupoMax.getText().trim());
+            if (nombre.isEmpty() || dia.isEmpty() || cupo <= 0 || !inicio.before(fin)) {
+                throw new IllegalArgumentException();
+            }
+
+            if (claseDAO.actualizarClase(id, nombre, entrenadorId, dia, inicio, fin, cupo)) {
+                JOptionPane.showMessageDialog(this, "Clase actualizada correctamente.");
+                cargarDatosClases();
+                limpiarCampos();
+                tablaClases.clearSelection();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo actualizar. Verifique el entrenador y que el nuevo cupo no sea menor al cupo actual.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Verifique el nombre, el ID del entrenador, el día, las horas (HH:MM) y el cupo.",
+                    "Datos inválidos", JOptionPane.WARNING_MESSAGE);
         }
     }
 

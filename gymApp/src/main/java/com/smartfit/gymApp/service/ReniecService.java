@@ -1,8 +1,6 @@
 package com.smartfit.gymApp.service;
 
 import com.smartfit.gymApp.dto.ReniecData;
-import com.smartfit.gymApp.dto.ReniecRequest;
-import com.smartfit.gymApp.dto.ReniecResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -18,32 +16,37 @@ public class ReniecService {
     @Value("${reniec.api.url}")
     private String apiUrl;
 
-    @Value("${reniec.api.token}")
+    @Value("${reniec.api.token:}")
     private String apiToken;
 
     public ReniecData consultarDni(String dni) {
         if (dni == null || !dni.matches("\\d{8}")) {
             throw new IllegalArgumentException("El DNI debe tener 8 dígitos numéricos.");
         }
+        if (apiToken == null || apiToken.isBlank()) {
+            throw new IllegalStateException("Falta configurar reniec.api.token en application.properties.");
+        }
+
+        // Decolecta espera GET con ?numero=NNNNNNNN
+        String url = apiUrl + "?numero=" + dni;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiToken);
 
-        ReniecRequest body = new ReniecRequest(dni);
-        HttpEntity<ReniecRequest> request = new HttpEntity<>(body, headers);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
 
-        try {
-            ResponseEntity<ReniecResponse> response = restTemplate.exchange(
-                    apiUrl, HttpMethod.POST, request, ReniecResponse.class);
+        // GET, no POST
+        ResponseEntity<ReniecData> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, ReniecData.class);
 
-            ReniecResponse r = response.getBody();
-            if (r == null || !r.isSuccess() || r.getData() == null) {
-                throw new RuntimeException("No se encontró información para el DNI: " + dni);
-            }
-            return r.getData();
-        } catch (Exception e) {
-            throw new RuntimeException("Error al consultar RENIEC: " + e.getMessage(), e);
+        ReniecData data = response.getBody();
+        if (data == null) {
+            throw new RuntimeException("Decolecta devolvió una respuesta vacía para el DNI " + dni);
         }
+        if (data.getNombres() == null || data.getNombres().isBlank()) {
+            throw new RuntimeException("Decolecta no devolvió nombres para el DNI " + dni);
+        }
+        return data;
     }
 }

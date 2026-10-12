@@ -15,7 +15,7 @@ public class Asistencia {
     private LocalTime horaSalida;
 
     public Asistencia(int idAsistencia, String codigoSocio, LocalDate fecha,
-                       LocalTime horaEntrada, LocalTime horaSalida) {
+                    LocalTime horaEntrada, LocalTime horaSalida) {
         this.idAsistencia = idAsistencia;
         this.codigoSocio = codigoSocio;
         this.fecha = fecha;

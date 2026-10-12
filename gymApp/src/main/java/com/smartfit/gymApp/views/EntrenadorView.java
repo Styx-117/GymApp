@@ -116,7 +116,17 @@ public class EntrenadorView extends JPanel {
         btnEliminar.setBorderPainted(false);
         btnEliminar.setPreferredSize(new Dimension(170, 30));
 
+        JButton btnActualizar = new JButton("Guardar cambios");
+        btnActualizar.setBackground(new Color(70, 130, 180));
+        btnActualizar.setForeground(Color.WHITE);
+        btnActualizar.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnActualizar.setFocusPainted(false);
+        btnActualizar.setOpaque(true);
+        btnActualizar.setBorderPainted(false);
+        btnActualizar.setPreferredSize(new Dimension(150, 30));
+
         panelBotones.add(btnGuardar);
+        panelBotones.add(btnActualizar);
         panelBotones.add(btnEliminar);
 
         panelInferior.add(panelBotones, BorderLayout.SOUTH);
@@ -126,6 +136,16 @@ public class EntrenadorView extends JPanel {
 
         // Cargar datos al iniciar
         cargarDatosTabla();
+
+        tablaEntrenadores.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && tablaEntrenadores.getSelectedRow() >= 0) {
+                int fila = tablaEntrenadores.convertRowIndexToModel(tablaEntrenadores.getSelectedRow());
+                txtNombre.setText(String.valueOf(modeloTabla.getValueAt(fila, 1)));
+                txtApellido.setText(String.valueOf(modeloTabla.getValueAt(fila, 2)));
+                txtEspecialidad.setText(String.valueOf(modeloTabla.getValueAt(fila, 3)));
+                txtTelefono.setText(String.valueOf(modeloTabla.getValueAt(fila, 4)));
+            }
+        });
 
         // Evento del Botón Registrar
         btnGuardar.addActionListener(e -> {
@@ -150,6 +170,34 @@ public class EntrenadorView extends JPanel {
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al registrar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnActualizar.addActionListener(e -> {
+            int fila = tablaEntrenadores.getSelectedRow();
+            if (fila < 0) {
+                JOptionPane.showMessageDialog(this, "Seleccione un entrenador para actualizar.",
+                        "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()
+                    || txtEspecialidad.getText().trim().isEmpty() || txtTelefono.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Complete todos los campos.", "Campos vacíos",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int filaModelo = tablaEntrenadores.convertRowIndexToModel(fila);
+            int id = Integer.parseInt(String.valueOf(modeloTabla.getValueAt(filaModelo, 0)));
+            boolean actualizado = entrenadorDAO.actualizarEntrenador(id, txtNombre.getText().trim(),
+                    txtApellido.getText().trim(), txtEspecialidad.getText().trim(), txtTelefono.getText().trim());
+            if (actualizado) {
+                JOptionPane.showMessageDialog(this, "Entrenador actualizado correctamente.");
+                cargarDatosTabla();
+                limpiarCampos();
+                tablaEntrenadores.clearSelection();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo actualizar el entrenador.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 

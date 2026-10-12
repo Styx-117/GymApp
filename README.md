@@ -2,6 +2,33 @@
 > [!WARNING]
 > Proyecto en desarrollo
 
+## Ejecutar la aplicación
+
+El proyecto usa Maven y Spring Boot; no se debe ejecutar una clase suelta con `javac`.
+Configura estas variables de entorno antes de iniciar la aplicación:
+
+- `GYMAPP_DB_URL`, `GYMAPP_DB_USER` y `GYMAPP_DB_PASSWORD`: conexión a PostgreSQL.
+- `RENIEC_API_TOKEN`: token para consultar RENIEC (se mantiene en el backend, no en la interfaz).
+- `GYMAPP_API_BASE_URL`: opcional; URL del backend para la consulta del DNI. Por defecto es `http://localhost:8080`.
+
+Desde PowerShell, situado en la raíz del repositorio, configura las variables para la sesión
+actual con los datos de tu PostgreSQL (por ejemplo, los de Render):
+
+```powershell
+cd .\gymApp
+$env:GYMAPP_DB_URL = "jdbc:postgresql://HOST:5432/BASE_DE_DATOS?sslmode=require"
+$env:GYMAPP_DB_USER = "USUARIO"
+$env:GYMAPP_DB_PASSWORD = "CONTRASENA"
+$env:RENIEC_API_TOKEN = "TOKEN_RENIEC"
+.\mvnw.cmd spring-boot:run
+```
+
+Reemplaza los valores de ejemplo por las credenciales de tu base de datos y tu token; no
+los publiques ni los agregues al repositorio. Estas variables solo duran mientras esté
+abierta esa terminal. El arranque de Spring Boot inicia también la interfaz gráfica. Al
+registrar un socio, ingresa un DNI de 8 dígitos y pulsa **Consultar** para completar el
+nombre y los apellidos antes de guardar.
+
 **Proyecto para el curso de Algoritmos y Estructuras de Datos**
 
 ## Requerimientos funcionales
