@@ -1,6 +1,7 @@
 # GymApp
 > [!WARNING]
-> Proyecto en desarrollo
+> Proyecto en desarrollo APF2
+> Programado y testeado en VS Code
 
 ## Ejecutar la aplicación
 
@@ -66,121 +67,33 @@ nombre y los apellidos antes de guardar.
 ## Estructura del Proyecto
 
 ```
-GimnasioApp/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/
-│   │   │       └── gimnasio/
-│   │   │           ├── App.java
-│   │   │           ├── config/
-│   │   │           │   └── ConfiguracionDB.java
-│   │   │           ├── db/
-│   │   │           │   ├── ConexionDB.java
-│   │   │           │   └── ScriptBD.java
-│   │   │           ├── models/ (Hecho)
-│   │   │           │   ├── Usuario.java
-│   │   │           │   ├── Socio.java
-│   │   │           │   ├── Entrenador.java
-│   │   │           │   ├── Plan.java
-│   │   │           │   ├── Membresia.java
-│   │   │           │   ├── Pago.java
-│   │   │           │   ├── Asistencia.java
-│   │   │           │   ├── Clase.java
-│   │   │           │   ├── ReservaClase.java
-│   │   │           │   ├── Rutina.java
-│   │   │           │   ├── Ejercicio.java
-│   │   │           │   ├── Equipo.java
-│   │   │           │   ├── Incidencia.java
-│   │   │           │   └── Auditoria.java
-│   │   │           ├── structures/
-│   │   │           │   ├── arreglos/
-│   │   │           │   │   ├── ArregloSocios.java
-│   │   │           │   │   └── MatrizHorarios.java
-│   │   │           │   ├── tad/
-│   │   │           │   │   ├── TADLista.java
-│   │   │           │   │   └── TADSocio.java
-│   │   │           │   ├── listas/
-│   │   │           │   │   ├── Nodo.java
-│   │   │           │   │   ├── ListaEnlazada.java
-│   │   │           │   │   ├── ListaDoble.java
-│   │   │           │   │   └── ListaCircular.java
-│   │   │           │   ├── pilas/
-│   │   │           │   │   ├── NodoPila.java
-│   │   │           │   │   └── Pila.java
-│   │   │           │   ├── colas/
-│   │   │           │   │   ├── NodoCola.java
-│   │   │           │   │   ├── Cola.java
-│   │   │           │   │   └── ColaPrioridad.java
-│   │   │           │   ├── arboles/
-│   │   │           │   │   ├── NodoArbol.java
-│   │   │           │   │   ├── ArbolBinario.java
-│   │   │           │   │   └── ABB.java
-│   │   │           │   └── avl/
-│   │   │           │       ├── NodoAVL.java
-│   │   │           │       └── ArbolAVL.java
-│   │   │           ├── algorithms/
-│   │   │           │   ├── Busqueda.java
-│   │   │           │   ├── Ordenamiento.java
-│   │   │           │   └── Validaciones.java
-│   │   │           ├── services/
-│   │   │           │   ├── UsuarioService.java
-│   │   │           │   ├── SocioService.java
-│   │   │           │   ├── MembresiaService.java
-│   │   │           │   ├── PagoService.java
-│   │   │           │   ├── AsistenciaService.java
-│   │   │           │   ├── ClaseService.java
-│   │   │           │   ├── RutinaService.java
-│   │   │           │   ├── EquipoService.java
-│   │   │           │   └── IncidenciaService.java
-│   │   │           ├── controllers/
-│   │   │           │   ├── LoginController.java
-│   │   │           │   ├── SocioController.java
-│   │   │           │   ├── MembresiaController.java
-│   │   │           │   ├── PagoController.java
-│   │   │           │   ├── AsistenciaController.java
-│   │   │           │   ├── ClaseController.java
-│   │   │           │   ├── RutinaController.java
-│   │   │           │   ├── EquipoController.java
-│   │   │           │   └── IncidenciaController.java
-│   │   │           ├── views/
-│   │   │           │   ├── LoginView.java
-│   │   │           │   ├── MainView.java
-│   │   │           │   ├── SocioView.java
-│   │   │           │   ├── MembresiaView.java
-│   │   │           │   ├── PagoView.java
-│   │   │           │   ├── AsistenciaView.java
-│   │   │           │   ├── ClaseView.java
-│   │   │           │   ├── RutinaView.java
-│   │   │           │   ├── EquipoView.java
-│   │   │           │   ├── IncidenciaView.java
-│   │   │           │   └── ReporteView.java
-│   │   │           ├── dao/
-│   │   │           │   ├── UsuarioDAO.java
-│   │   │           │   ├── SocioDAO.java
-│   │   │           │   ├── MembresiaDAO.java
-│   │   │           │   ├── PagoDAO.java
-│   │   │           │   ├── AsistenciaDAO.java
-│   │   │           │   ├── ClaseDAO.java
-│   │   │           │   ├── RutinaDAO.java
-│   │   │           │   ├── EquipoDAO.java
-│   │   │           │   └── IncidenciaDAO.java
-│   │   │           └── utils/
-│   │   │               ├── FechaUtil.java
-│   │   │               ├── ValidacionUtil.java
-│   │   │               └── ReporteUtil.java
-│   │   └── resources/
-│   │       ├── images/
-│   │       ├── styles/
-│   │       └── reports/
-│   └── test/
-│       └── java/
-│           └── com/gimnasio/tests/
-├── db/
-│   ├── script_gimnasio.sql
-│   └── backups/
-├── docs/
-│   ├── diagramas/
-│   ├── manuales/
-│   └── pruebas/
-└── build.gradle / pom.xml```
+├───main
+│   ├───java
+│   │   └───com
+│   │       └───smartfit
+│   │           └───gymApp
+│   │               ├───config
+│   │               ├───controller
+│   │               ├───db
+│   │               ├───dto
+│   │               ├───model
+│   │               ├───repository
+│   │               ├───service
+│   │               ├───structures
+│   │               │   ├───arboles
+│   │               │   ├───arreglos
+│   │               │   ├───avl
+│   │               │   ├───colas
+│   │               │   ├───listas
+│   │               │   ├───pilas
+│   │               │   └───tad
+│   │               ├───utils
+│   │               └───views
+│   └───resources
+└───test
+    └───java
+        └───com
+            └───smartfit
+                └───gymApp
+                    └───service                    
+´´´
