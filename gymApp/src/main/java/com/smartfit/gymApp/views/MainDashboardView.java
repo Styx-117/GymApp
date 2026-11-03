@@ -1,185 +1,49 @@
 package com.smartfit.gymApp.views;
 
+import com.smartfit.gymApp.service.AuditoriaService;
+import com.smartfit.gymApp.utils.UI;
 import javax.swing.*;
 import java.awt.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MainDashboardView extends JFrame {
-
-    private JPanel contentPanel;
-    private CardLayout cardLayout;
+    private final CardLayout cards=new CardLayout();
+    private final JPanel contenido=new JPanel(cards);
+    private final Map<String,JPanel> vistas=new LinkedHashMap<>();
+    private final Map<String,JButton> botones=new LinkedHashMap<>();
+    private final String usuario;
 
     public MainDashboardView(String usuarioLogueado) {
-        setTitle("SmartFit - Panel Principal");
-        setSize(1100, 650);
-        setMinimumSize(new Dimension(850, 500)); // Evita que se deforme al achicarla demasiado
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-
-        // 1. PANEL LATERAL
-
-        JPanel sidebar = new JPanel();
-        sidebar.setPreferredSize(new Dimension(250, 650));
-        sidebar.setBackground(new Color(15, 15, 18));
-        sidebar.setLayout(new BorderLayout());
-
-        // Logo superior
-        JPanel panelLogo = new JPanel(new FlowLayout(FlowLayout.LEFT, 25, 30));
-        panelLogo.setOpaque(false);
-        JLabel lblLogo = new JLabel("SMARTFIT SYSTEM");
-        lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblLogo.setForeground(new Color(255, 204, 0));
-        panelLogo.add(lblLogo);
-        sidebar.add(panelLogo, BorderLayout.NORTH);
-
-        JPanel panelBotonesMenu = new JPanel(new GridLayout(0, 1, 0, 8));
-        panelBotonesMenu.setOpaque(false);
-        panelBotonesMenu.setBorder(BorderFactory.createEmptyBorder(10, 15, 20, 15));
-
-        String[] opciones = {
-                "Inicio",
-                "Gestión de Socios",
-                "Entrenadores",
-                "Clases",
-                "Reservas",
-                "Incidencias",
-                "Auditoría",
-                "Cerrar Sesión"
-        };
-
-        for (String opcion : opciones) {
-            JButton btnMenu = new JButton("   " + opcion);
-            btnMenu.setFont(new Font("Dialog", Font.BOLD, 13));
-            btnMenu.setForeground(Color.WHITE);
-            btnMenu.setBackground(new Color(15, 15, 18));
-            btnMenu.setHorizontalAlignment(SwingConstants.LEFT);
-            btnMenu.setBorderPainted(false);
-            btnMenu.setFocusPainted(false);
-            btnMenu.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-            btnMenu.addMouseListener(new java.awt.event.MouseAdapter() {
-                public void mouseEntered(java.awt.event.MouseEvent evt) {
-                    btnMenu.setBackground(new Color(30, 30, 35));
-                    btnMenu.setForeground(new Color(255, 204, 0));
-                }
-
-                public void mouseExited(java.awt.event.MouseEvent evt) {
-                    btnMenu.setBackground(new Color(15, 15, 18));
-                    btnMenu.setForeground(Color.WHITE);
-                }
-            });
-
-            if (opcion.equals("Inicio")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "INICIO"));
-            } else if (opcion.equals("Gestión de Socios")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "SOCIOS"));
-            } else if (opcion.equals("Entrenadores")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "ENTRENADORES"));
-            } else if (opcion.equals("Clases")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "CLASES"));
-            } else if (opcion.equals("Reservas")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "RESERVAS"));
-            } else if (opcion.equals("Incidencias")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "INCIDENCIAS"));
-            } else if (opcion.equals("Auditoría")) {
-                btnMenu.addActionListener(e -> cardLayout.show(contentPanel, "AUDITORIA"));
-            } else if (opcion.equals("Cerrar Sesión")) {
-                btnMenu.addActionListener(e -> {
-                    dispose();
-                    new LoginView().setVisible(true);
-                });
-            }
-
-            panelBotonesMenu.add(btnMenu);
+        usuario=usuarioLogueado;setTitle("SmartFit - Panel Principal");Rectangle espacio=GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        setSize(Math.min(1280,espacio.width),Math.min(850,espacio.height));setMinimumSize(new Dimension(980,620));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);setLocationRelativeTo(null);setLayout(new BorderLayout());
+        AuditoriaService.getInstance().activarPersistencia();
+        JPanel lateral=new JPanel(new BorderLayout());lateral.setPreferredSize(new Dimension(215,800));lateral.setBackground(new Color(17,18,20));
+        JPanel marca=new JPanel(new GridLayout(2,1,0,6));marca.setOpaque(false);marca.setBorder(BorderFactory.createEmptyBorder(28,22,28,12));
+        JLabel nombre=new JLabel("SMARTFIT SYSTEM");nombre.setForeground(UI.ACENTO);nombre.setFont(new Font("Segoe UI",Font.BOLD,16));marca.add(nombre);
+        JLabel sede=new JLabel("Operación de sede · Ica");sede.setForeground(Color.LIGHT_GRAY);sede.setFont(new Font("Segoe UI",Font.PLAIN,11));marca.add(sede);lateral.add(marca,BorderLayout.NORTH);
+        JPanel menu=new JPanel();menu.setOpaque(false);menu.setLayout(new BoxLayout(menu,BoxLayout.Y_AXIS));menu.setBorder(BorderFactory.createEmptyBorder(4,12,10,12));
+        for(String opcion:new String[]{"Inicio","Socios","Entrenadores","Clases","Reservas","Equipos","Incidencias","Auditoría"}) {
+            JButton b=new JButton(opcion);b.setFont(new Font("Segoe UI",Font.BOLD,13));b.setForeground(Color.LIGHT_GRAY);b.setBackground(new Color(17,18,20));
+            b.setHorizontalAlignment(SwingConstants.LEFT);b.setBorder(BorderFactory.createEmptyBorder(14,14,14,10));b.setFocusPainted(false);b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));b.setMaximumSize(new Dimension(Integer.MAX_VALUE,49));
+            b.addActionListener(e->mostrar(opcion));menu.add(b);menu.add(Box.createVerticalStrut(4));botones.put(opcion,b);
         }
-
-        sidebar.add(panelBotonesMenu, BorderLayout.CENTER);
-
-        // 2. CONFIGURACIÓN DEL CARDLAYOUT Y PANELES
-
-        cardLayout = new CardLayout();
-        contentPanel = new JPanel(cardLayout);
-
-        JPanel panelInicio = crearPanelInicio(usuarioLogueado);
-        SocioView panelSocios = new SocioView();
-        EntrenadorView panelEntrenadores = new EntrenadorView();
-        ClaseView panelClases = new ClaseView();
-        ReservaView panelReservas = new ReservaView();
-        IncidenciaView panelIncidencias = new IncidenciaView();
-        AuditoriaView panelAuditoria = new AuditoriaView();
-
-        contentPanel.add(panelInicio, "INICIO");
-        contentPanel.add(panelSocios, "SOCIOS");
-        contentPanel.add(panelEntrenadores, "ENTRENADORES");
-        contentPanel.add(panelClases, "CLASES");
-        contentPanel.add(panelReservas, "RESERVAS");
-        contentPanel.add(panelIncidencias, "INCIDENCIAS");
-        contentPanel.add(panelAuditoria, "AUDITORIA");
-
-        add(sidebar, BorderLayout.WEST);
-        add(contentPanel, BorderLayout.CENTER);
+        lateral.add(menu,BorderLayout.CENTER);
+        JPanel sesion=new JPanel(new BorderLayout(0,12));sesion.setOpaque(false);sesion.setBorder(BorderFactory.createEmptyBorder(16,20,20,20));JLabel cuenta=new JLabel("Sesión: "+usuario);cuenta.setForeground(Color.LIGHT_GRAY);sesion.add(cuenta,BorderLayout.NORTH);
+        JButton salir=UI.boton("Cerrar sesión");salir.addActionListener(e->{dispose();AuditoriaService.getInstance().setUsuarioActual(0);new LoginView().setVisible(true);});sesion.add(salir,BorderLayout.SOUTH);lateral.add(sesion,BorderLayout.SOUTH);
+        add(lateral,BorderLayout.WEST);contenido.setBackground(UI.FONDO);add(contenido,BorderLayout.CENTER);mostrar("Inicio");
+        com.smartfit.gymApp.utils.WindowChrome.install(this);
     }
-
-    // 3. PANEL DE INICIO
-
-    private JPanel crearPanelInicio(String usuarioLogueado) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(245, 247, 250));
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 40, 40, 40));
-
-        // Títulos superiores con BoxLayout vertical fluido
-        JPanel panelTop = new JPanel();
-        panelTop.setLayout(new BoxLayout(panelTop, BoxLayout.Y_AXIS));
-        panelTop.setOpaque(false);
-
-        JLabel lblWelcome = new JLabel("¡Bienvenido, " + usuarioLogueado + "!");
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        lblWelcome.setForeground(new Color(30, 30, 30));
-
-        JLabel lblSub = new JLabel("Aquí tienes el resumen operativo del gimnasio para hoy.");
-        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblSub.setForeground(new Color(100, 100, 100));
-
-        panelTop.add(lblWelcome);
-        panelTop.add(Box.createRigidArea(new Dimension(0, 5)));
-        panelTop.add(lblSub);
-
-        panel.add(panelTop, BorderLayout.NORTH);
-
-        JPanel panelTarjetas = new JPanel(new GridLayout(1, 3, 20, 0));
-        panelTarjetas.setOpaque(false);
-        panelTarjetas.setBorder(BorderFactory.createEmptyBorder(40, 0, 150, 0));
-
-        panelTarjetas.add(crearTarjetaKPI("Socios Activos", "1,240", new Color(255, 204, 0)));
-        panelTarjetas.add(crearTarjetaKPI("Entrenadores", "18", new Color(40, 40, 45)));
-        panelTarjetas.add(crearTarjetaKPI("Clases Hoy", "35", new Color(40, 40, 45)));
-
-        panel.add(panelTarjetas, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // Método auxiliar para crear tarjetas KPI adaptables
-    private JPanel crearTarjetaKPI(String titulo, String valor, Color colorFondo) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(colorFondo);
-        card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        boolean esClaro = colorFondo.equals(new Color(255, 204, 0));
-        Color textColor = esClaro ? Color.BLACK : Color.WHITE;
-
-        JLabel lblTitleCard = new JLabel(titulo);
-        lblTitleCard.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblTitleCard.setForeground(textColor);
-
-        JLabel lblValueCard = new JLabel(valor);
-        lblValueCard.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        lblValueCard.setForeground(textColor);
-        lblValueCard.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-
-        card.add(lblTitleCard, BorderLayout.NORTH);
-        card.add(lblValueCard, BorderLayout.CENTER);
-
-        return card;
+    private void mostrar(String nombre) {
+        JPanel vista=vistas.get(nombre);
+        if(vista==null){vista=switch(nombre){
+            case "Inicio"->new InicioView(usuario,this::mostrar);case "Socios"->new SocioView();case "Entrenadores"->new EntrenadorView();
+            case "Clases"->new ClaseView();case "Reservas"->new ReservaView();case "Equipos"->new EquiposView();case "Incidencias"->new IncidenciaView();
+            case "Auditoría"->new AuditoriaView();default->throw new IllegalArgumentException(nombre);
+        };vistas.put(nombre,vista);contenido.add(vista,nombre);}
+        cards.show(contenido,nombre);
+        if(vista instanceof SocioView s)s.refreshData();else if(vista instanceof EntrenadorView e)e.refreshData();
+        botones.forEach((n,b)->{b.setBackground(n.equals(nombre)?UI.CAMPO:new Color(17,18,20));b.setForeground(n.equals(nombre)?UI.ACENTO:Color.LIGHT_GRAY);});
     }
 }

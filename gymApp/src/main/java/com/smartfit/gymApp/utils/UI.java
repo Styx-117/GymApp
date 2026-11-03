@@ -1,17 +1,71 @@
 package com.smartfit.gymApp.utils;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 
 
 public final class UI {
 
-    public static final Color FONDO = new Color(25, 25, 35);
-    public static final Color PANEL = new Color(30, 30, 42);
-    public static final Color CAMPO = new Color(45, 45, 60);
+    public static final Color FONDO = new Color(25, 26, 29);
+    public static final Color PANEL = new Color(34, 35, 39);
+    public static final Color CAMPO = new Color(44, 46, 50);
     public static final Color ACENTO = new Color(255, 204, 0);
 
     private UI() {}
+
+    public static void separadorAmarillo(JSplitPane panel) {
+        panel.setUI(new BasicSplitPaneUI() {
+            @Override public BasicSplitPaneDivider createDefaultDivider() {
+                return new BasicSplitPaneDivider(this) {
+                    @Override public void paint(Graphics g) {
+                        g.setColor(ACENTO);
+                        g.fillRect(0, 0, getWidth(), getHeight());
+                    }
+
+                    @Override public void print(Graphics g) {
+                        paint(g);
+                    }
+                };
+            }
+        });
+        panel.setBorder(null);
+        panel.setOpaque(true);
+        panel.setBackground(ACENTO);
+        ((BasicSplitPaneUI) panel.getUI()).getDivider().setBorder(null);
+        ((BasicSplitPaneUI) panel.getUI()).getDivider().setBackground(ACENTO);
+    }
+
+    public static void aplicarTema() {
+        UIManager.put("Panel.background", FONDO);
+        UIManager.put("OptionPane.background", FONDO);
+        UIManager.put("OptionPane.messageForeground", Color.WHITE);
+        UIManager.put("Label.foreground", Color.WHITE);
+        UIManager.put("TextField.background", CAMPO);
+        UIManager.put("TextField.foreground", Color.WHITE);
+        UIManager.put("ComboBox.background", CAMPO);
+        UIManager.put("ComboBox.foreground", Color.WHITE);
+        UIManager.put("ComboBox.selectionBackground", ACENTO);
+        UIManager.put("ComboBox.selectionForeground", Color.BLACK);
+        UIManager.put("Table.background", PANEL);
+        UIManager.put("Table.foreground", Color.WHITE);
+        UIManager.put("Table.selectionBackground", ACENTO);
+        UIManager.put("Table.selectionForeground", Color.BLACK);
+        UIManager.put("TableHeader.background", CAMPO);
+        UIManager.put("TableHeader.foreground", Color.WHITE);
+        UIManager.put("ScrollPane.background", PANEL);
+    }
+
+    public static void estilizarTabla(JTable table) {
+        table.setBackground(PANEL); table.setForeground(Color.WHITE);
+        table.setSelectionBackground(ACENTO); table.setSelectionForeground(Color.BLACK);
+        table.setRowHeight(32); table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(CAMPO); table.getTableHeader().setForeground(Color.WHITE);
+        table.setShowVerticalLines(false); table.setGridColor(new Color(60, 62, 67));
+        table.setFillsViewportHeight(true); table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    }
 
     public static JLabel titulo(String texto) {
         JLabel l = new JLabel("   " + texto, JLabel.LEFT);

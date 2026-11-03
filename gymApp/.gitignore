@@ -1,18 +1,24 @@
 # Maven
 target/
+*.class
 !.mvn/wrapper/maven-wrapper.jar
 
-# IDE
+# Configuracion local de editores
 .idea/
-*.iml
 .vscode/
+*.iml
 .settings/
 .classpath
 .project
 
-# Logs
+# Temporales y registros
+.build/
 *.log
+*.pid
+*.tmp
+*.pyc
+__pycache__/
 
-# OS
+# Sistema operativo
 .DS_Store
 Thumbs.db

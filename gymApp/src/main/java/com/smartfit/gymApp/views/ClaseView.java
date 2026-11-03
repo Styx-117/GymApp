@@ -1,242 +1,193 @@
 package com.smartfit.gymApp.views;
 
+import com.smartfit.gymApp.model.Clase;
 import com.smartfit.gymApp.repository.ClaseDAO;
-
+import com.smartfit.gymApp.service.ClaseService;
+import com.smartfit.gymApp.utils.UI;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.HierarchyEvent;
 import java.sql.Time;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 public class ClaseView extends JPanel {
-    private JTable tablaClases;
-    private DefaultTableModel modeloTabla;
-    private JTextField txtNombre, txtEntrenadorId, txtDia, txtHoraInicio, txtHoraFin, txtCupoMax;
-    private ClaseDAO claseDAO;
+    private final ClaseService servicio=new ClaseService();
+    private final JTextField buscar=UI.campo(24), nombre=UI.campo(20), inicio=UI.campo(8),fin=UI.campo(8),cupo=UI.campo(6);
+    private final JComboBox<String> estado=new JComboBox<>(new String[]{"Activas","Inactivas","Todas"});
+    private final JComboBox<String> dia=new JComboBox<>(new String[]{"LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO","DOMINGO"});
+    private final JComboBox<ClaseDAO.EntrenadorOpcion> entrenador=new JComboBox<>();
+    private final DefaultTableModel modelo=new DefaultTableModel(
+            new String[]{"ID","Clase","Entrenador","Día","Inicio","Fin","Cupo","Reservados","Estado"},0) {
+        @Override public boolean isCellEditable(int r,int c) { return false; }
+        @Override public Class<?> getColumnClass(int c) { return c==0 || c==6 || c==7?Integer.class:String.class; }
+    };
+    private final JTable tabla=new JTable(modelo);
+    private final TableRowSorter<DefaultTableModel> orden=new TableRowSorter<>(modelo);
+    private final JLabel resumen=UI.etiqueta("Carga las clases para empezar.");
+    private final JButton nuevo=UI.boton("Registrar clase"),guardar=UI.boton("Guardar cambios"),
+            cambiar=UI.boton("Desactivar / reactivar"),limpiar=UI.boton("Nuevo formulario"),recargar=UI.boton("Actualizar");
+    private List<ClaseDAO.Registro> registros=new ArrayList<>();
+    private boolean ocupado;
+    private int versionCarga;
+    private SwingWorker<Datos,Void> cargaWorker;
 
     public ClaseView() {
-        claseDAO = new ClaseDAO();
-        setLayout(new BorderLayout());
-        setBackground(new Color(24, 24, 30)); 
+        setLayout(new BorderLayout(12,12)); setBackground(UI.FONDO);
+        setBorder(BorderFactory.createEmptyBorder(18,20,18,20));
+        
+        // Aplicar el filtro numérico al campo de cupo máximo (máximo 3 dígitos)
+        ((javax.swing.text.AbstractDocument) cupo.getDocument()).setDocumentFilter(new com.smartfit.gymApp.utils.NumericDocumentFilter(3));
 
-        // Título del módulo
-        JLabel lblTitulo = new JLabel("Gestión de Clases", JLabel.LEFT);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setBorder(BorderFactory.createEmptyBorder(20, 20, 15, 20));
-        add(lblTitulo, BorderLayout.NORTH);
-
-       
-        String[] columnas = {"ID", "Nombre", "Entrenador", "Día", "Inicio", "Fin", "Cupo Máx", "Cupo Actual",
-                "ID entrenador"};
-        modeloTabla = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
+        JPanel norte=new JPanel(new BorderLayout(0,12)); norte.setOpaque(false);
+        norte.add(UI.titulo("Clases y horarios"),BorderLayout.NORTH);
+        JPanel filtros=UI.fila(); filtros.add(UI.etiqueta("Buscar:")); filtros.add(buscar);
+        buscar.setToolTipText("ID, nombre de clase, entrenador o día");
+        filtros.add(UI.etiqueta("Estado:")); filtros.add(estado); filtros.add(recargar);
+        norte.add(filtros,BorderLayout.CENTER); norte.add(resumen,BorderLayout.SOUTH); add(norte,BorderLayout.NORTH);
+        tabla.setRowSorter(orden); tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabla.setRowHeight(31); tabla.setBackground(UI.CAMPO); tabla.setForeground(Color.WHITE);
+        tabla.setSelectionBackground(UI.ACENTO); tabla.setSelectionForeground(Color.BLACK);
+        tabla.getTableHeader().setReorderingAllowed(false);
+        tabla.getTableHeader().setBackground(UI.PANEL); tabla.getTableHeader().setForeground(Color.WHITE);
+        add(UI.scroll(tabla,"Clases registradas"),BorderLayout.CENTER);
+        JPanel sur=new JPanel(new BorderLayout(0,12)); sur.setOpaque(false);
+        JPanel campos=new JPanel(new GridLayout(2,3,14,12)); campos.setOpaque(false);
+        campos.add(campo("Nombre",nombre)); campos.add(campo("Entrenador activo",entrenador)); campos.add(campo("Día",dia));
+        campos.add(campo("Inicio (HH:mm)",inicio)); campos.add(campo("Fin (HH:mm)",fin)); campos.add(campo("Cupo máximo",cupo));
+        sur.add(campos,BorderLayout.CENTER);
+        JPanel botones=UI.fila(); botones.add(nuevo); botones.add(guardar); botones.add(cambiar); botones.add(limpiar);
+        sur.add(botones,BorderLayout.SOUTH); add(sur,BorderLayout.SOUTH);
+        for(JComboBox<?> combo:new JComboBox<?>[]{estado,dia,entrenador}) { combo.setBackground(UI.CAMPO); combo.setForeground(Color.WHITE); }
+        recargar.addActionListener(e -> refrescar());
+        estado.addActionListener(e -> filtrar());
+        buscar.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { filtrar(); }
+            public void removeUpdate(DocumentEvent e) { filtrar(); }
+            public void changedUpdate(DocumentEvent e) { filtrar(); }
+        });
+        tabla.getSelectionModel().addListSelectionListener(e -> { if(!e.getValueIsAdjusting()) seleccionar(); });
+        limpiar.addActionListener(e -> limpiar()); nuevo.addActionListener(e -> guardar(false)); guardar.addActionListener(e -> guardar(true));
+        cambiar.addActionListener(e -> cambiarEstado());
+        addHierarchyListener(e -> { if((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED)!=0) { if(isShowing()) refrescar(); else cancelarCarga(); } });
+    }
+    private JPanel campo(String etiqueta,JComponent componente) {
+        JPanel panel=new JPanel(new BorderLayout(0,5)); panel.setOpaque(false);
+        panel.add(UI.etiqueta(etiqueta),BorderLayout.NORTH); panel.add(componente,BorderLayout.CENTER); return panel;
+    }
+    public void refrescar() {
+        if(ocupado) return;
+        ocupado(true); resumen.setText("Cargando clases…");
+        int version=++versionCarga;
+        cargaWorker=new SwingWorker<Datos,Void>() {
+            protected Datos doInBackground() { var clases=servicio.listar();return isCancelled()?new Datos(List.of(),List.of()):new Datos(clases,servicio.entrenadoresActivos()); }
+            protected void done() {
+                if(isCancelled()||version!=versionCarga)return;
+                if(cargaWorker==this)cargaWorker=null;
+                try {
+                    Datos datos=get(); registros=datos.clases();
+                    tabla.clearSelection(); modelo.setRowCount(0); entrenador.removeAllItems();
+                    datos.entrenadores().forEach(entrenador::addItem);
+                    for(ClaseDAO.Registro r:registros) {
+                        Clase c=r.clase(); modelo.addRow(new Object[]{c.getIdClase(),c.getNombre(),r.entrenador(),c.getDiaSemana(),
+                                texto(c.getHoraInicio()),texto(c.getHoraFin()),c.getCupoMaximo(),c.getCupoActual(),r.activo()?"Activa":"Inactiva"});
+                    }
+                    limpiar(); filtrar();
+                } catch(Exception ex) { resumen.setText("No se pudieron cargar las clases. Pulsa Actualizar."); error(ex); }
+                finally { ocupado(false); }
             }
         };
-        
-        tablaClases = new JTable(modeloTabla);
-        tablaClases.setRowHeight(25);
-        tablaClases.removeColumn(tablaClases.getColumnModel().getColumn(8));
-        
-     
-        JScrollPane scrollPane = new JScrollPane(tablaClases);
-        scrollPane.getViewport().setBackground(new Color(30, 30, 40));
-        
-        JPanel panelTablaContenedor = new JPanel(new BorderLayout());
-        panelTablaContenedor.setBackground(new Color(24, 24, 30));
-        panelTablaContenedor.setBorder(BorderFactory.createEmptyBorder(0, 20, 15, 20));
-        panelTablaContenedor.add(scrollPane, BorderLayout.CENTER);
-        add(panelTablaContenedor, BorderLayout.CENTER);
-
-       
-        JPanel panelInferior = new JPanel(new BorderLayout(0, 15));
-        panelInferior.setBackground(new Color(24, 24, 30));
-        panelInferior.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
-
-       
-        JPanel panelCampos = new JPanel(new GridLayout(3, 4, 15, 10));
-        panelCampos.setBackground(new Color(24, 24, 30));
-
-        txtNombre = new JTextField();
-        txtEntrenadorId = new JTextField();
-        txtDia = new JTextField();
-        txtHoraInicio = new JTextField();
-        txtHoraFin = new JTextField();
-        txtCupoMax = new JTextField();
-
-        panelCampos.add(crearLabelCampo("Nombre Clase:"));
-        panelCampos.add(txtNombre);
-        panelCampos.add(crearLabelCampo("ID Entrenador:"));
-        panelCampos.add(txtEntrenadorId);
-
-        panelCampos.add(crearLabelCampo("Día (ej. Lunes):"));
-        panelCampos.add(txtDia);
-        panelCampos.add(crearLabelCampo("Hora Inicio (HH:MM):"));
-        panelCampos.add(txtHoraInicio);
-
-        panelCampos.add(crearLabelCampo("Hora Fin (HH:MM):"));
-        panelCampos.add(txtHoraFin);
-        panelCampos.add(crearLabelCampo("Cupo Máximo:"));
-        panelCampos.add(txtCupoMax);
-
-        panelInferior.add(panelCampos, BorderLayout.CENTER);
-
-        // Botones de acción
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-        panelBotones.setBackground(new Color(24, 24, 30));
-JButton btnRegistrar = new JButton("Registrar Clase");
-        btnRegistrar.setBackground(new Color(255, 193, 7));
-        btnRegistrar.setForeground(Color.BLACK);
-        btnRegistrar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnRegistrar.setFocusPainted(false);
-        btnRegistrar.setOpaque(true);
-        btnRegistrar.setBorderPainted(false); 
-        btnRegistrar.setPreferredSize(new Dimension(140, 35)); 
-        btnRegistrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        JButton btnEliminar = new JButton("Eliminar Clase");
-        btnEliminar.setBackground(new Color(220, 53, 69));
-        btnEliminar.setForeground(Color.WHITE);
-        btnEliminar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnEliminar.setFocusPainted(false);
-        btnEliminar.setOpaque(true);
-        btnEliminar.setBorderPainted(false); 
-        btnEliminar.setPreferredSize(new Dimension(140, 35)); 
-        btnEliminar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        JButton btnActualizar = new JButton("Guardar cambios");
-        btnActualizar.setBackground(new Color(70, 130, 180));
-        btnActualizar.setForeground(Color.WHITE);
-        btnActualizar.setFocusPainted(false);
-        btnActualizar.setPreferredSize(new Dimension(150, 35));
-        panelBotones.add(btnRegistrar);
-        panelBotones.add(btnActualizar);
-        panelBotones.add(btnEliminar);
-
-        panelInferior.add(panelBotones, BorderLayout.SOUTH);
-        add(panelInferior, BorderLayout.SOUTH);
-
-        // Cargar datos iniciales
-        cargarDatosClases();
-
-        tablaClases.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && tablaClases.getSelectedRow() >= 0) {
-                int fila = tablaClases.convertRowIndexToModel(tablaClases.getSelectedRow());
-                txtNombre.setText(String.valueOf(modeloTabla.getValueAt(fila, 1)));
-                txtEntrenadorId.setText(String.valueOf(modeloTabla.getValueAt(fila, 8)));
-                txtDia.setText(String.valueOf(modeloTabla.getValueAt(fila, 3)));
-                txtHoraInicio.setText(String.valueOf(modeloTabla.getValueAt(fila, 4)).substring(0, 5));
-                txtHoraFin.setText(String.valueOf(modeloTabla.getValueAt(fila, 5)).substring(0, 5));
-                txtCupoMax.setText(String.valueOf(modeloTabla.getValueAt(fila, 6)));
+        cargaWorker.execute();
+    }
+    private void cancelarCarga() {
+        SwingWorker<?,Void> anterior=cargaWorker;
+        if(anterior!=null) {
+            ++versionCarga;cargaWorker=null;
+            if(!anterior.isDone())anterior.cancel(true);
+            ocupado(false);
+        }
+    }
+    private void filtrar() {
+        String texto=buscar.getText().trim().toLowerCase(Locale.ROOT);
+        String est=String.valueOf(estado.getSelectedItem());
+        orden.setRowFilter(new RowFilter<>() {
+            public boolean include(Entry<? extends DefaultTableModel,? extends Integer> fila) {
+                boolean coincideEstado=est.equals("Todas") || fila.getStringValue(8).equals(est.equals("Activas")?"Activa":"Inactiva");
+                String datos=fila.getStringValue(0)+" "+fila.getStringValue(1)+" "+fila.getStringValue(2)+" "+fila.getStringValue(3);
+                return coincideEstado && datos.toLowerCase(Locale.ROOT).contains(texto);
             }
         });
-
-        // Acciones de los botones
-        btnRegistrar.addActionListener(e -> registrarClase());
-        btnEliminar.addActionListener(e -> eliminarClase());
-        btnActualizar.addActionListener(e -> actualizarClase());
+        resumen.setText(tabla.getRowCount()+" de "+modelo.getRowCount()+" clases · Desactivar conserva las reservas y el historial.");
     }
-
-    private JLabel crearLabelCampo(String texto) {
-        JLabel label = new JLabel(texto);
-        label.setForeground(Color.WHITE);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        return label;
+    private ClaseDAO.Registro seleccionada() {
+        int fila=tabla.getSelectedRow();
+        if(fila<0) return null;
+        int id=(Integer)modelo.getValueAt(tabla.convertRowIndexToModel(fila),0);
+        return registros.stream().filter(r -> r.clase().getIdClase()==id).findFirst().orElse(null);
     }
-
-    private void cargarDatosClases() {
-        modeloTabla.setRowCount(0);
-        List<Object[]> lista = claseDAO.listarClases();
-        for (Object[] fila : lista) {
-            modeloTabla.addRow(fila);
-        }
+    private void seleccionar() {
+        ClaseDAO.Registro r=seleccionada(); if(r==null) return;
+        Clase c=r.clase(); nombre.setText(c.getNombre()); inicio.setText(texto(c.getHoraInicio())); fin.setText(texto(c.getHoraFin()));
+        cupo.setText(String.valueOf(c.getCupoMaximo())); dia.setSelectedItem(c.getDiaSemana());
+        entrenador.setSelectedIndex(-1);
+        for(int i=0;i<entrenador.getItemCount();i++) if(entrenador.getItemAt(i).id()==c.getIdEntrenador()) entrenador.setSelectedIndex(i);
+        cambiar.setText(r.activo()?"Desactivar clase":"Reactivar clase");
     }
-
-    private void registrarClase() {
+    private void guardar(boolean edicion) {
+        ClaseDAO.Registro actual=seleccionada();
+        if(edicion && actual==null) { UI.aviso(this,"Selecciona una clase para guardar los cambios."); return; }
         try {
-            String nombre = txtNombre.getText().trim();
-            int idEntrenador = Integer.parseInt(txtEntrenadorId.getText().trim());
-            String dia = txtDia.getText().trim();
-            Time horaInicio = Time.valueOf(txtHoraInicio.getText().trim() + ":00");
-            Time horaFin = Time.valueOf(txtHoraFin.getText().trim() + ":00");
-            int cupoMax = Integer.parseInt(txtCupoMax.getText().trim());
-
-            boolean exito = claseDAO.registrarClase(nombre, idEntrenador, dia, horaInicio, horaFin, cupoMax);
-            if (exito) {
-                JOptionPane.showMessageDialog(this, "Clase registrada exitosamente.");
-                cargarDatosClases();
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al registrar la clase.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Por favor verifique los datos ingresados (Formatos de hora HH:MM).", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        }
+            ClaseDAO.EntrenadorOpcion opcion=(ClaseDAO.EntrenadorOpcion)entrenador.getSelectedItem();
+            if(opcion==null) throw new IllegalArgumentException("Selecciona un entrenador activo.");
+            String n=nombre.getText().trim(),d=(String)dia.getSelectedItem();
+            Time i=Time.valueOf(LocalTime.parse(inicio.getText().trim())),f=Time.valueOf(LocalTime.parse(fin.getText().trim()));
+            int capacidad=Integer.parseInt(cupo.getText().trim());
+            tarea(() -> edicion?servicio.actualizar(actual.clase().getIdClase(),n,opcion.id(),d,i,f,capacidad)
+                    :servicio.registrar(n,opcion.id(),d,i,f,capacidad),
+                    "No se guardó la clase: el entrenador debe estar activo y el cupo no puede ser menor al reservado.");
+        } catch(java.time.format.DateTimeParseException|NumberFormatException ex) {
+            UI.aviso(this,"Revisa las horas (HH:mm) y el cupo numérico.");
+        } catch(IllegalArgumentException ex) { UI.aviso(this,ex.getMessage()); }
     }
-
-    private void eliminarClase() {
-        int filaSeleccionada = tablaClases.getSelectedRow();
-        if (filaSeleccionada >= 0) {
-            int idClase = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
-            int confirmacion = JOptionPane.showConfirmDialog(this, "¿Está seguro de eliminar esta clase?", "Confirmar", JOptionPane.YES_NO_OPTION);
-            
-            if (confirmacion == JOptionPane.YES_OPTION) {
-                if (claseDAO.eliminarClase(idClase)) {
-                    JOptionPane.showMessageDialog(this, "Clase eliminada.");
-                    cargarDatosClases();
-                } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo eliminar la clase.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Seleccione una clase de la tabla para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-        }
+    private void cambiarEstado() {
+        ClaseDAO.Registro r=seleccionada();
+        if(r==null) { UI.aviso(this,"Selecciona una clase."); return; }
+        String accion=r.activo()?"desactivar":"reactivar";
+        if(JOptionPane.showConfirmDialog(this,"¿Deseas "+accion+" "+r.clase().getNombre()+"?\nSe conservan sus reservas e historial.",
+                "Cambiar estado",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION) return;
+        tarea(() -> servicio.cambiarEstado(r.clase().getIdClase(),!r.activo()),"La clase ya cambió de estado. Actualiza los datos.");
     }
-
-    private void actualizarClase() {
-        int fila = tablaClases.getSelectedRow();
-        if (fila < 0) {
-            JOptionPane.showMessageDialog(this, "Seleccione una clase para actualizar.",
-                    "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        try {
-            int filaModelo = tablaClases.convertRowIndexToModel(fila);
-            int id = Integer.parseInt(String.valueOf(modeloTabla.getValueAt(filaModelo, 0)));
-            String nombre = txtNombre.getText().trim();
-            int entrenadorId = Integer.parseInt(txtEntrenadorId.getText().trim());
-            String dia = txtDia.getText().trim();
-            Time inicio = Time.valueOf(txtHoraInicio.getText().trim() + ":00");
-            Time fin = Time.valueOf(txtHoraFin.getText().trim() + ":00");
-            int cupo = Integer.parseInt(txtCupoMax.getText().trim());
-            if (nombre.isEmpty() || dia.isEmpty() || cupo <= 0 || !inicio.before(fin)) {
-                throw new IllegalArgumentException();
+    private void tarea(java.util.concurrent.Callable<Boolean> accion,String mensaje) {
+        ocupado(true);
+        new SwingWorker<Boolean,Void>() {
+            protected Boolean doInBackground() throws Exception { return accion.call(); }
+            protected void done() {
+                try { if(!get()) UI.aviso(ClaseView.this,mensaje); }
+                catch(Exception ex) { error(ex); }
+                finally { ocupado(false); if(isShowing())refrescar(); }
             }
-
-            if (claseDAO.actualizarClase(id, nombre, entrenadorId, dia, inicio, fin, cupo)) {
-                JOptionPane.showMessageDialog(this, "Clase actualizada correctamente.");
-                cargarDatosClases();
-                limpiarCampos();
-                tablaClases.clearSelection();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "No se pudo actualizar. Verifique el entrenador y que el nuevo cupo no sea menor al cupo actual.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Verifique el nombre, el ID del entrenador, el día, las horas (HH:MM) y el cupo.",
-                    "Datos inválidos", JOptionPane.WARNING_MESSAGE);
-        }
+        }.execute();
     }
-
-    private void limpiarCampos() {
-        txtNombre.setText("");
-        txtEntrenadorId.setText("");
-        txtDia.setText("");
-        txtHoraInicio.setText("");
-        txtHoraFin.setText("");
-        txtCupoMax.setText("");
+    private void limpiar() {
+        tabla.clearSelection(); nombre.setText(""); inicio.setText("07:00"); fin.setText("08:00"); cupo.setText("20");
+        dia.setSelectedIndex(0); if(entrenador.getItemCount()>0) entrenador.setSelectedIndex(0);
+        cambiar.setText("Desactivar / reactivar");
     }
+    private void ocupado(boolean valor) {
+        ocupado=valor;
+        for(JButton boton:new JButton[]{nuevo,guardar,cambiar,limpiar,recargar}) boton.setEnabled(!valor);
+    }
+    private void error(Exception ex) {
+        Throwable causa=ex instanceof ExecutionException?ex.getCause():ex;
+        UI.aviso(this,causa==null?"No se pudo completar la operación.":causa.getMessage());
+    }
+    private static String texto(LocalTime hora) { return hora==null?"":hora.toString(); }
+    private record Datos(List<ClaseDAO.Registro> clases,List<ClaseDAO.EntrenadorOpcion> entrenadores) {}
 }

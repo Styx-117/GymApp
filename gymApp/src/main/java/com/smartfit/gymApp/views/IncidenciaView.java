@@ -1,149 +1,82 @@
 package com.smartfit.gymApp.views;
 
+import com.smartfit.gymApp.model.Equipo;
 import com.smartfit.gymApp.model.Incidencia;
+import com.smartfit.gymApp.service.EquipoService;
 import com.smartfit.gymApp.service.IncidenciaService;
 import com.smartfit.gymApp.utils.UI;
-
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Locale;
 
 public class IncidenciaView extends JPanel {
+    private final IncidenciaService servicio=IncidenciaService.persistente();
+    private final EquipoService equiposServicio=new EquipoService();
+    private final JComboBox<Equipo> equipo=new JComboBox<>();
+    private final JTextField descripcion=UI.campo(20),buscar=UI.campo(18);
+    private final JComboBox<String> prioridad=new JComboBox<>(new String[]{"1 - Alta","2 - Media","3 - Baja"});
+    private final JComboBox<String> estado=new JComboBox<>(new String[]{"Todos","PENDIENTE","ATENDIDA","CANCELADA"});
+    private final JComboBox<String> filtroPrioridad=new JComboBox<>(new String[]{"Todas","1 - Alta","2 - Media","3 - Baja"});
+    private final DefaultTableModel modelo=new DefaultTableModel(new Object[]{"ID","Equipo","Descripcion","Prioridad","Estado","Reporte","Atencion"},0){public boolean isCellEditable(int r,int c){return false;}};
+    private final JTable tabla=new JTable(modelo);
+    private final TablePager paginacion=new TablePager(modelo,50);
+    private final JLabel resumen=UI.etiqueta("Cargando incidencias...");
+    private final JButton registrar=UI.boton("Registrar"),actualizar=UI.boton("Guardar cambios"),atender=UI.boton("Atender siguiente"),cancelar=UI.boton("Cancelar incidencia"),reactivar=UI.boton("Reactivar"),recargar=UI.boton("Actualizar lista");
+    private List<Equipo> equipos=List.of();
+    private boolean ocupado;
 
-    private final IncidenciaService servicio = IncidenciaService.getInstance();
-    private final JTextField txtEquipo = UI.campo(8);
-    private final JTextField txtDescripcion = UI.campo(22);
-    private final JComboBox<String> cmbPrioridad = new JComboBox<>(new String[]{"1 - Alta", "2 - Media", "3 - Baja"});
-    private final DefaultTableModel modeloPendientes = new DefaultTableModel(
-            new Object[]{"ID", "Equipo", "Descripción", "Prioridad"}, 0) {
-        @Override
-        public boolean isCellEditable(int row, int column) {
-            return false;
+    public IncidenciaView(){
+        setLayout(new BorderLayout(10,10));setBackground(UI.FONDO);setBorder(BorderFactory.createEmptyBorder(8,12,12,12));
+        JPanel norte=new JPanel(new BorderLayout());norte.setOpaque(false);norte.add(UI.titulo("Incidencias de mantenimiento"),BorderLayout.NORTH);
+        JPanel filtros=new JPanel(new GridLayout(1,4,8,0));filtros.setOpaque(false);filtros.add(campo("Buscar por equipo o descripcion",buscar));filtros.add(campo("Estado",estado));filtros.add(campo("Prioridad",filtroPrioridad));filtros.add(campo("Datos guardados",recargar));norte.add(filtros,BorderLayout.CENTER);add(norte,BorderLayout.NORTH);
+        tabla.setRowHeight(28);tabla.setBackground(UI.CAMPO);tabla.setForeground(Color.WHITE);tabla.setSelectionBackground(UI.ACENTO);tabla.setSelectionForeground(Color.BLACK);tabla.setAutoCreateRowSorter(true);tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);int[] anchos={55,105,300,80,115,110,110};for(int n=0;n<anchos.length;n++)tabla.getColumnModel().getColumn(n).setPreferredWidth(anchos[n]);
+        JPanel resultados=new JPanel(new BorderLayout(0,6));resultados.setOpaque(false);
+        resultados.add(UI.scroll(tabla,"Pendientes por prioridad, historial y canceladas"),BorderLayout.CENTER);
+        resultados.add(paginacion,BorderLayout.SOUTH);add(resultados,BorderLayout.CENTER);
+        JPanel sur=new JPanel(new BorderLayout(8,8));sur.setOpaque(false);
+        JPanel campos=new JPanel(new GridLayout(1,3,12,0));campos.setOpaque(false);
+        campos.add(campo("Equipo registrado",equipo));campos.add(campo("Descripcion (hasta 200 caracteres)",descripcion));campos.add(campo("Prioridad",prioridad));sur.add(campos,BorderLayout.NORTH);
+        JPanel acciones=new JPanel(new GridLayout(2,3,8,8));acciones.setOpaque(false);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar})acciones.add(b);
+        JButton limpiar=UI.boton("Limpiar formulario");acciones.add(limpiar);sur.add(acciones,BorderLayout.CENTER);sur.add(resumen,BorderLayout.SOUTH);add(sur,BorderLayout.SOUTH);
+        equipo.setRenderer(new DefaultListCellRenderer(){public Component getListCellRendererComponent(JList<?> l,Object v,int i,boolean s,boolean f){super.getListCellRendererComponent(l,v,i,s,f);if(v instanceof Equipo e)setText(e.getCodigoEquipo()+" - "+e.getNombre()+" ("+e.getEstado()+")");return this;}});
+        recargar.addActionListener(e->refrescarDatos());estado.addActionListener(e->mostrar());filtroPrioridad.addActionListener(e->mostrar());
+        buscar.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){mostrar();}public void removeUpdate(DocumentEvent e){mostrar();}public void changedUpdate(DocumentEvent e){mostrar();}});
+        tabla.getSelectionModel().addListSelectionListener(e->{if(!e.getValueIsAdjusting())seleccionar();});
+        registrar.addActionListener(e->{Equipo eq=(Equipo)equipo.getSelectedItem();if(eq==null){UI.aviso(this,"No hay equipos registrados.");return;}String texto=descripcion.getText().trim();int p=prioridad.getSelectedIndex()+1;ejecutar(()->servicio.registrar(eq.getCodigoEquipo(),texto,p));});
+        actualizar.addActionListener(e->{Integer id=idSeleccionado();Equipo eq=(Equipo)equipo.getSelectedItem();if(id==null||eq==null){UI.aviso(this,"Selecciona una incidencia pendiente y su equipo.");return;}String texto=descripcion.getText().trim();int p=prioridad.getSelectedIndex()+1;ejecutar(()->{if(!servicio.actualizarPendiente(id,eq.getCodigoEquipo(),texto,p))throw new IllegalStateException("La incidencia ya no esta pendiente. Actualiza la lista.");});});
+        atender.addActionListener(e->ejecutar(()->{if(servicio.atenderSiguiente()==null)throw new IllegalStateException("No hay incidencias pendientes por atender.");}));
+        cancelar.addActionListener(e->{Integer id=idSeleccionado();if(id==null){UI.aviso(this,"Selecciona una incidencia pendiente.");return;}if(JOptionPane.showConfirmDialog(this,"¿Cancelar esta incidencia? El registro se conservara.","Confirmar",JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION)ejecutar(()->{if(!servicio.eliminarPendiente(id))throw new IllegalStateException("Solo puedes cancelar incidencias pendientes.");});});
+        reactivar.addActionListener(e->{Integer id=idSeleccionado();if(id==null){UI.aviso(this,"Selecciona una incidencia cancelada.");return;}ejecutar(()->{if(!servicio.reactivar(id))throw new IllegalStateException("Solo puedes reactivar incidencias canceladas.");});});
+        limpiar.addActionListener(e->{tabla.clearSelection();descripcion.setText("");prioridad.setSelectedIndex(0);});
+        addHierarchyListener(e->{if((e.getChangeFlags()&java.awt.event.HierarchyEvent.SHOWING_CHANGED)!=0&&isShowing())refrescarDatos();});
+    }
+    private JPanel campo(String texto,JComponent control){JPanel p=new JPanel(new BorderLayout(0,4));p.setOpaque(false);p.add(UI.etiqueta(texto),BorderLayout.NORTH);p.add(control,BorderLayout.CENTER);return p;}
+    public void refrescarDatos(){ejecutar(()->{servicio.recargar();equipos=equiposServicio.listar();});}
+    private Integer idSeleccionado(){int f=tabla.getSelectedRow();return f<0?null:((Number)modelo.getValueAt(tabla.convertRowIndexToModel(f),0)).intValue();}
+    private void seleccionar(){int f=tabla.getSelectedRow();if(f<0)return;f=tabla.convertRowIndexToModel(f);String codigo=String.valueOf(modelo.getValueAt(f,1));for(int n=0;n<equipo.getItemCount();n++)if(equipo.getItemAt(n).getCodigoEquipo().equals(codigo)){equipo.setSelectedIndex(n);break;}descripcion.setText(String.valueOf(modelo.getValueAt(f,2)));prioridad.setSelectedIndex(((Number)modelo.getValueAt(f,3)).intValue()-1);}
+    private void mostrar(){
+        String texto=buscar.getText().trim().toLowerCase(Locale.ROOT),filtro=(String)estado.getSelectedItem();int fp=filtroPrioridad.getSelectedIndex();List<Object[]> filas=new ArrayList<>();
+        for(Incidencia i:servicio.listar()){
+            String hay=(i.getIdIncidencia()+" "+i.getCodigoEquipo()+" "+i.getDescripcion()).toLowerCase(Locale.ROOT);
+            if(!hay.contains(texto)||(!"Todos".equals(filtro)&&!filtro.equals(i.getEstado()))||(fp>0&&fp!=i.getPrioridad()))continue;
+            filas.add(new Object[]{i.getIdIncidencia(),i.getCodigoEquipo(),i.getDescripcion(),i.getPrioridad(),i.getEstado(),i.getFechaReporte(),i.getFechaAtencion()});
         }
-    };
-    private final JTable tablaPendientes = new JTable(modeloPendientes);
-    private final JTextArea txtAtendidas = UI.areaSalida();
-
-    public IncidenciaView() {
-        setLayout(new BorderLayout());
-        setBackground(UI.FONDO);
-        add(UI.titulo("Incidencias de mantenimiento (Cola de prioridad)"), BorderLayout.NORTH);
-
-        JPanel centro = new JPanel(new GridLayout(1, 2, 10, 0));
-        centro.setOpaque(false);
-        centro.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
-        centro.add(UI.scroll(tablaPendientes, "Pendientes (sale primero la de mayor prioridad)"));
-        centro.add(UI.scroll(txtAtendidas, "Historial de atendidas (cola FIFO)"));
-        add(centro, BorderLayout.CENTER);
-
-        JPanel sur = new JPanel(new GridLayout(2, 1));
-        sur.setBackground(UI.PANEL);
-        JPanel f1 = UI.fila();
-        f1.add(UI.etiqueta("Código equipo:"));
-        f1.add(txtEquipo);
-        f1.add(UI.etiqueta("Descripción:"));
-        f1.add(txtDescripcion);
-        f1.add(UI.etiqueta("Prioridad:"));
-        f1.add(cmbPrioridad);
-        JButton btnRegistrar = UI.boton("Registrar incidencia");
-        f1.add(btnRegistrar);
-        JPanel f2 = UI.fila();
-        JButton btnVer = UI.boton("Ver siguiente");
-        JButton btnAtender = UI.boton("Atender siguiente");
-        JButton btnActualizar = UI.boton("Actualizar seleccionada");
-        JButton btnEliminar = UI.boton("Eliminar seleccionada");
-        f2.add(btnVer);
-        f2.add(btnAtender);
-        f2.add(btnActualizar);
-        f2.add(btnEliminar);
-        sur.add(f1);
-        sur.add(f2);
-        add(sur, BorderLayout.SOUTH);
-
-        btnRegistrar.addActionListener(e -> {
-            String eq = txtEquipo.getText().trim().toUpperCase();
-            String desc = txtDescripcion.getText().trim();
-            if (eq.isEmpty() || desc.isEmpty()) {
-                UI.aviso(this, "Ingresa el código del equipo y la descripción.");
-                return;
-            }
-            servicio.registrar(eq, desc, cmbPrioridad.getSelectedIndex() + 1);
-            txtEquipo.setText("");
-            txtDescripcion.setText("");
-            refrescar();
-        });
-        btnVer.addActionListener(e -> {
-            Incidencia i = servicio.verSiguiente();
-            if (i == null) UI.aviso(this, "La cola está vacía: no hay incidencias pendientes.");
-            else UI.info(this, "Siguiente a atender:\nEquipo " + i.getCodigoEquipo() + " - " + i.getDescripcion()
-                    + "\nPrioridad " + i.getPrioridad());
-        });
-        btnAtender.addActionListener(e -> {
-            Incidencia i = servicio.atenderSiguiente();
-            if (i == null) UI.aviso(this, "La cola está vacía: no hay incidencias pendientes.");
-            refrescar();
-        });
-        tablaPendientes.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && tablaPendientes.getSelectedRow() >= 0) {
-                int fila = tablaPendientes.convertRowIndexToModel(tablaPendientes.getSelectedRow());
-                txtEquipo.setText(String.valueOf(modeloPendientes.getValueAt(fila, 1)));
-                txtDescripcion.setText(String.valueOf(modeloPendientes.getValueAt(fila, 2)));
-                cmbPrioridad.setSelectedIndex(Integer.parseInt(
-                        String.valueOf(modeloPendientes.getValueAt(fila, 3))) - 1);
-            }
-        });
-        btnActualizar.addActionListener(e -> {
-            int fila = tablaPendientes.getSelectedRow();
-            if (fila < 0) {
-                UI.aviso(this, "Selecciona una incidencia pendiente para actualizar.");
-                return;
-            }
-            int filaModelo = tablaPendientes.convertRowIndexToModel(fila);
-            int id = Integer.parseInt(String.valueOf(modeloPendientes.getValueAt(filaModelo, 0)));
-            if (!servicio.actualizarPendiente(id, txtEquipo.getText().trim().toUpperCase(),
-                    txtDescripcion.getText().trim(), cmbPrioridad.getSelectedIndex() + 1)) {
-                UI.aviso(this, "No se pudo actualizar. Completa el equipo y la descripción.");
-                return;
-            }
-            refrescar();
-            txtEquipo.setText("");
-            txtDescripcion.setText("");
-        });
-        btnEliminar.addActionListener(e -> {
-            int fila = tablaPendientes.getSelectedRow();
-            if (fila < 0) {
-                UI.aviso(this, "Selecciona una incidencia pendiente para eliminar.");
-                return;
-            }
-            int filaModelo = tablaPendientes.convertRowIndexToModel(fila);
-            int id = Integer.parseInt(String.valueOf(modeloPendientes.getValueAt(filaModelo, 0)));
-            int confirmacion = JOptionPane.showConfirmDialog(this,
-                    "¿Eliminar la incidencia seleccionada?", "Confirmar eliminación",
-                    JOptionPane.YES_NO_OPTION);
-            if (confirmacion == JOptionPane.YES_OPTION) {
-                if (servicio.eliminarPendiente(id)) {
-                    refrescar();
-                    txtEquipo.setText("");
-                    txtDescripcion.setText("");
-                } else {
-                    UI.aviso(this, "La incidencia ya no está pendiente y no se puede eliminar.");
-                }
-            }
-        });
-        refrescar();
+        paginacion.setRows(filas);
+        Incidencia siguiente=servicio.verSiguiente();resumen.setText(filas.size()+" resultados. "+(siguiente==null?"Sin pendientes.":"Siguiente por prioridad: #"+siguiente.getIdIncidencia()+" - "+siguiente.getCodigoEquipo()+" (P"+siguiente.getPrioridad()+")"));
     }
-
-    private void refrescar() {
-        modeloPendientes.setRowCount(0);
-        servicio.getPendientes().recorrer(i -> modeloPendientes.addRow(new Object[]{
-                i.getIdIncidencia(), i.getCodigoEquipo(), i.getDescripcion(), i.getPrioridad()}));
-        StringBuilder a = new StringBuilder();
-        servicio.getAtendidas().recorrer(i -> a.append(linea(i)).append("   atendida el ").append(i.getFechaAtencion()).append('\n'));
-        txtAtendidas.setText(servicio.getAtendidas().estaVacia() ? "(historial vacío)" : a.toString());
+    private void ejecutar(Runnable tarea){
+        if(ocupado)return;ocupado=true;botones(false);resumen.setText("Consultando la base de datos...");
+        new SwingWorker<Void,Void>(){protected Void doInBackground(){tarea.run();return null;}protected void done(){
+            try{get();equipo.removeAllItems();for(Equipo e:equipos)equipo.addItem(e);mostrar();}
+            catch(Exception e){Throwable causa=e.getCause()==null?e:e.getCause();resumen.setText("No se pudo completar la operacion.");UI.aviso(IncidenciaView.this,causa.getMessage());}
+            finally{ocupado=false;botones(true);}
+        }}.execute();
     }
-
-    private String linea(Incidencia i) {
-        return "[P" + i.getPrioridad() + "] " + i.getCodigoEquipo() + " - " + i.getDescripcion();
-    }
+    private void botones(boolean valor){paginacion.setBusy(!valor);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar,recargar})b.setEnabled(valor);buscar.setEnabled(valor);estado.setEnabled(valor);filtroPrioridad.setEnabled(valor);equipo.setEnabled(valor);descripcion.setEnabled(valor);prioridad.setEnabled(valor);tabla.setEnabled(valor);}
 }

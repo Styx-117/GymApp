@@ -16,6 +16,9 @@ public class GymAppApplication {
         app.setHeadless(false);          // <-- propiedad de Spring
         app.run(args);
 
-        SwingUtilities.invokeLater(() -> new LoginView().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            com.smartfit.gymApp.utils.UI.aplicarTema();
+            new LoginView().setVisible(true);
+        });
     }
 }

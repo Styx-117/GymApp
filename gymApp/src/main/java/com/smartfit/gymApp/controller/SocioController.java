@@ -23,9 +23,9 @@ public class SocioController {
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody Socio s) {
-        if (socioService.existeDni(s.getDni())) {
-            return ResponseEntity.badRequest().body("Ya existe un socio con ese DNI");
+    public ResponseEntity<?> crear(@RequestBody Socio s) {
+        if (s != null && s.getIdSocio() != null) {
+            throw new IllegalArgumentException("El alta no acepta un identificador. Para actualizar un socio, usa PUT /api/socios/{id}.");
         }
         return ResponseEntity.ok(socioService.guardar(s));
     }
@@ -55,11 +55,19 @@ public class SocioController {
      */
     @PostMapping("/registrar-por-dni/{dni}")
     public ResponseEntity<?> registrarPorDni(@PathVariable String dni) {
-        try {
-            Socio s = socioService.registrarPorDni(dni);
-            return ResponseEntity.ok(s);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(socioService.registrarPorDni(dni));
+    }
+
+    @GetMapping("/pagina")
+    public com.smartfit.gymApp.repository.PageResult<com.smartfit.gymApp.repository.SocioDAO.RegistroSocio> pagina(
+            @RequestParam(defaultValue="") String buscar,@RequestParam(required=false) Boolean activo,
+            @RequestParam(defaultValue="0") int pagina,@RequestParam(defaultValue="50") int tamanio) {
+        return socioService.buscarPagina(buscar,activo,pagina,tamanio);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Socio> actualizar(@PathVariable Long id,@RequestBody Socio socio) {
+        if(socio==null)throw new IllegalArgumentException("Faltan los datos del socio.");
+        socio.setIdSocio(id);return ResponseEntity.ok(socioService.guardar(socio));
     }
 }

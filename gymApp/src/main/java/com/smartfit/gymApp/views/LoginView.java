@@ -1,7 +1,7 @@
 package com.smartfit.gymApp.views;
 
 import com.smartfit.gymApp.GymAppApplication;
-import com.smartfit.gymApp.repository.UsuarioRepository;
+import com.smartfit.gymApp.service.UsuarioService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -82,7 +82,7 @@ public class LoginView extends JFrame {
         cardPanel.add(underline);
 
         // Campo Usuario
-        JLabel lblUser = new JLabel("Usuario o Correo");
+        JLabel lblUser = new JLabel("Usuario");
         lblUser.setFont(new Font("Segoe UI", Font.BOLD, 11));
         lblUser.setForeground(new Color(180, 180, 190));
         lblUser.setBounds(40, 100, 200, 20);
@@ -140,38 +140,46 @@ public class LoginView extends JFrame {
         btnIngresar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         cardPanel.add(btnIngresar);
 
-        // Acción del botón conectada a la base de datos de Render
-        btnIngresar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String usuario = txtUsuario.getText().trim();
-                String password = new String(txtPassword.getPassword()).trim();
-
-                if (usuario.isEmpty() || password.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Por favor complete todos los campos.", "Campos vacíos", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                // Verificación contra PostgreSQL en Render
-                UsuarioRepository usuarioRepo = new UsuarioRepository();
-                boolean accesoValido = usuarioRepo.verificarCredenciales(usuario, password);
-
-                if (accesoValido) {
-                    JOptionPane.showMessageDialog(null, "¡Bienvenido a SmartFit, " + usuario + "!", "Acceso Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                    dispose(); // Cierra el login
-                    new MainDashboardView(usuario).setVisible(true); // Abre el panel principal
-                } else {
-                    JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos.", "Error de Autenticación", JOptionPane.ERROR_MESSAGE);
-                    txtPassword.setText("");
-                }
+        btnIngresar.addActionListener(e -> {
+            String usuario = txtUsuario.getText().trim();
+            String password = new String(txtPassword.getPassword());
+            if (usuario.isBlank() || password.isBlank()) {
+                JOptionPane.showMessageDialog(this, "Completa el usuario y la contraseña.");
+                return;
             }
+            btnIngresar.setEnabled(false);
+            btnIngresar.setText("Conectando…");
+            new SwingWorker<com.smartfit.gymApp.model.Usuario, Void>() {
+                protected com.smartfit.gymApp.model.Usuario doInBackground() {
+                    return new UsuarioService().login(usuario, password);
+                }
+                protected void done() {
+                    try {
+                        var cuenta = get();
+                        if (cuenta == null) {
+                            JOptionPane.showMessageDialog(LoginView.this, "Usuario o contraseña incorrectos, o cuenta inactiva.");
+                            txtPassword.setText("");
+                            return;
+                        }
+                        com.smartfit.gymApp.service.AuditoriaService.getInstance().setUsuarioActual(cuenta.getId().intValue());
+                        dispose();
+                        new MainDashboardView(cuenta.getNombre()).setVisible(true);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(LoginView.this, "No se pudo conectar con la base de datos. Comprueba la conexión.", "Conexión", JOptionPane.WARNING_MESSAGE);
+                    } finally {
+                        btnIngresar.setEnabled(true);
+                        btnIngresar.setText("Ingresar");
+                    }
+                }
+            }.execute();
         });
-        
+
         // Permitir presionar Enter en la contraseña para ingresar directamente
         txtPassword.addActionListener(btnIngresar.getActionListeners()[0]);
 
         backgroundPanel.add(cardPanel);
         add(backgroundPanel);
+        com.smartfit.gymApp.utils.WindowChrome.install(this);
     }
 
     public static void main(String[] args) {

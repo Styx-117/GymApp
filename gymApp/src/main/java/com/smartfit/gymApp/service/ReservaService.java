@@ -2,82 +2,84 @@ package com.smartfit.gymApp.service;
 
 import com.smartfit.gymApp.model.Clase;
 import com.smartfit.gymApp.model.ReservaClase;
+import com.smartfit.gymApp.repository.ReservaDAO;
+import com.smartfit.gymApp.repository.ClaseDAO;
+import com.smartfit.gymApp.validation.GestionValidator;
+import java.util.List;
 import com.smartfit.gymApp.structures.arboles.ABB;
 
-
+/** La BD confirma cada operación; el ABB/las colas se reconstruyen desde los registros guardados. */
 public class ReservaService {
-
     private static ReservaService instancia;
-
-    private final ABB<GestorReservasClase> gestores = new ABB<>();
-    private int contadorReservas = 0;
-
-    private ReservaService() {
-        gestores.setEtiquetador(g -> "C" + g.getClase().getIdClase());
-    }
-
+    private final ABB<GestorReservasClase> gestores=new ABB<>();
+    private final ReservaDAO dao=new ReservaDAO();
+    private final ClaseService clases=new ClaseService();
+    private ReservaService() { gestores.setEtiquetador(g -> "C"+g.getClase().getIdClase()); }
     public static synchronized ReservaService getInstance() {
-        if (instancia == null) {
-            instancia = new ReservaService();
-        }
+        if(instancia==null) instancia=new ReservaService();
         return instancia;
     }
-
-   
-    public GestorReservasClase registrarClase(Clase clase) {
-        GestorReservasClase existente = gestores.buscar(GestorReservasClase.clave(clase.getIdClase()));
-        if (existente != null) {
-            return existente;
-        }
-        GestorReservasClase nuevo = new GestorReservasClase(clase);
-        gestores.insertar(nuevo);
-        return nuevo;
+    public List<ClaseDAO.Registro> listarClases(){return clases.listar();}
+    public List<ReservaDAO.SocioOpcion> sociosActivos(){return dao.sociosActivos();}
+    public synchronized ReservaDAO.Carga cargarClase(int idClase) {
+        GestionValidator.id(idClase,"una clase");
+        ReservaDAO.Carga carga=dao.cargarClase(idClase);
+        gestores.eliminar(GestorReservasClase.clave(idClase));
+        gestores.insertar(carga.gestor());
+        return carga;
     }
-
-    public GestorReservasClase gestorDe(int idClase) {
+    /** Compatibilidad para quien necesita registrar una clase en el índice, sin crearla en BD. */
+    public synchronized GestorReservasClase registrarClase(Clase clase) {
+        GestorReservasClase existente=gestorDe(clase.getIdClase());
+        if(existente!=null) return existente;
+        GestorReservasClase gestor=new GestorReservasClase(clase);
+        gestores.insertar(gestor);
+        return gestor;
+    }
+    public synchronized GestorReservasClase gestorDe(int idClase) {
         return gestores.buscar(GestorReservasClase.clave(idClase));
     }
-
-    
-    public ReservaClase reservar(Clase clase, String codigoSocio) {
-        GestorReservasClase g = registrarClase(clase);
-        ReservaClase r = g.reservar(++contadorReservas, codigoSocio);
-        if (r == null) {
-            contadorReservas--;
-            return null;
+   public ReservaClase reservar(Clase clase,String codigoSocio) {
+        if(clase==null)throw new IllegalArgumentException("Selecciona una clase.");
+        GestionValidator.id(clase.getIdClase(),"una clase");GestionValidator.codigoSocio(codigoSocio);
+        
+        //  Validar mediante la carga actual de la clase en el DAO
+        ReservaDAO.Carga cargaActual = dao.cargarClase(clase.getIdClase());
+        boolean duplicado = cargaActual.filas().stream()
+                .map(ReservaDAO.Fila::reserva)
+                .anyMatch(r -> r.getCodigoSocio().equals(codigoSocio) && !"CANCELADA".equals(r.getEstado()));
+                
+        if (duplicado) {
+            throw new IllegalArgumentException("El socio ya se encuentra registrado en esta clase.");
         }
-        AuditoriaService.getInstance().registrar("RESERVAR_CLASE",
-                codigoSocio + " -> clase " + clase.getIdClase() + " (" + r.getEstado() + ")");
-        return r;
-    }
 
-    
-    public ReservaClase cancelar(int idClase, String codigoSocio) {
-        GestorReservasClase g = gestorDe(idClase);
-        if (g == null) {
-            return null;
-        }
-        ReservaClase r = g.cancelar(codigoSocio);
-        if (r != null) {
-            AuditoriaService.getInstance().registrar("CANCELAR_RESERVA",
-                    codigoSocio + " de clase " + idClase
-                            + (g.getUltimaPromovida() != null
-                            ? " (asciende " + g.getUltimaPromovida().getCodigoSocio() + ")" : ""));
-        }
-        return r;
+        ReservaClase reserva=dao.reservar(clase.getIdClase(),codigoSocio);
+        registrarAuditoria("RESERVAR_CLASE",codigoSocio+" → clase "+clase.getIdClase()+" ("+reserva.getEstado()+")");
+        return reserva;
     }
-
-    public boolean actualizarCodigoSocio(int idClase, String codigoActual, String codigoNuevo) {
-        GestorReservasClase gestor = gestorDe(idClase);
-        if (gestor == null || !gestor.actualizarCodigoSocio(codigoActual, codigoNuevo)) {
-            return false;
-        }
-        AuditoriaService.getInstance().registrar("ACTUALIZAR_RESERVA",
-                codigoActual + " -> " + codigoNuevo + " en clase " + idClase);
-        return true;
+    public ReservaClase cancelar(int idClase,String codigoSocio) {
+        GestionValidator.id(idClase,"una clase");GestionValidator.codigoSocio(codigoSocio);
+        ReservaDAO.Cancelacion resultado=dao.cancelar(idClase,codigoSocio);
+        if(resultado.cancelada()!=null) registrarAuditoria("CANCELAR_RESERVA",codigoSocio+" de clase "+idClase
+                +(resultado.promovida()==null?"":"; asciende "+resultado.promovida().getCodigoSocio()));
+        return resultado.cancelada();
     }
-
-    public ABB<GestorReservasClase> getGestores() {
-        return gestores;
+    public boolean actualizarCodigoSocio(int idClase,String actual,String nuevo) {
+        GestionValidator.id(idClase,"una clase");GestionValidator.codigoSocio(actual);GestionValidator.codigoSocio(nuevo);
+        boolean cambio=dao.reasignar(idClase,actual,nuevo);
+        if(cambio) registrarAuditoria("ACTUALIZAR_RESERVA",actual+" → "+nuevo+" en clase "+idClase);
+        return cambio;
     }
+    public int confirmarDisponibles(int idClase) {
+        GestionValidator.id(idClase,"una clase");
+        int cantidad=dao.confirmarDisponibles(idClase);
+        if(cantidad>0) registrarAuditoria("CONFIRMAR_RESERVAS",cantidad+" reservas de clase "+idClase);
+        return cantidad;
+    }
+    private void registrarAuditoria(String accion,String detalle) {
+        // La reserva ya está confirmada: un fallo del historial no debe simular un fallo de la reserva.
+        try { AuditoriaService.getInstance().registrar(accion,detalle); }
+        catch(RuntimeException ex) { System.err.println("La reserva se guardó; el historial no estuvo disponible."); }
+    }
+    public ABB<GestorReservasClase> getGestores() { return gestores; }
 }

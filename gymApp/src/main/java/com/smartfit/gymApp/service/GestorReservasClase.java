@@ -5,6 +5,9 @@ import com.smartfit.gymApp.model.ReservaClase;
 import com.smartfit.gymApp.structures.colas.Cola;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Predicate;
 
 
 public class GestorReservasClase implements Comparable<GestorReservasClase> {
@@ -43,13 +46,17 @@ public class GestorReservasClase implements Comparable<GestorReservasClase> {
 
     
     public ReservaClase cancelar(String codigoSocio) {
+        return cancelar(codigoSocio, codigo -> true);
+    }
+
+    public ReservaClase cancelar(String codigoSocio, Predicate<String> socioElegible) {
         ultimaPromovida = null;
         ReservaClase cancelada = confirmadas.quitarSi(r -> r.getCodigoSocio().equals(codigoSocio));
         if (cancelada != null) {
             cancelada.setEstado("CANCELADA");
             clase.setCupoActual(clase.getCupoActual() - 1);
-            if (!listaEspera.estaVacia()) {
-                ReservaClase promovida = listaEspera.dequeue();
+            ReservaClase promovida = listaEspera.quitarSi(r -> socioElegible.test(r.getCodigoSocio()));
+            if (promovida != null) {
                 promovida.setEstado("CONFIRMADA");
                 promovida.setPosicionListaEspera(-1);
                 confirmadas.enqueue(promovida);
@@ -62,9 +69,38 @@ public class GestorReservasClase implements Comparable<GestorReservasClase> {
         cancelada = listaEspera.quitarSi(r -> r.getCodigoSocio().equals(codigoSocio));
         if (cancelada != null) {
             cancelada.setEstado("CANCELADA");
+            cancelada.setPosicionListaEspera(-1);
             renumerarEspera();
         }
         return cancelada;
+    }
+
+    /** Reconstruye las colas desde registros persistidos sin crear reservas nuevas. */
+    public void restaurar(List<ReservaClase> reservas) {
+        confirmadas.vaciar();
+        listaEspera.vaciar();
+        ultimaPromovida = null;
+        reservas.stream().filter(r -> "CONFIRMADA".equals(r.getEstado()))
+                .sorted(Comparator.comparingInt(ReservaClase::getIdReserva)).forEach(confirmadas::enqueue);
+        reservas.stream().filter(r -> "LISTA_ESPERA".equals(r.getEstado()))
+                .sorted(Comparator.comparingInt(ReservaClase::getPosicionListaEspera)
+                        .thenComparingInt(ReservaClase::getIdReserva)).forEach(listaEspera::enqueue);
+        clase.setCupoActual(confirmadas.tamanio());
+        renumerarEspera();
+    }
+
+    /** Completa cupos con los primeros socios elegibles; los inactivos conservan su historial. */
+    public void promoverDisponibles(Predicate<String> socioElegible) {
+        while (clase.tieneCupoDisponible()) {
+            ReservaClase reserva=listaEspera.quitarSi(r -> socioElegible.test(r.getCodigoSocio()));
+            if (reserva==null) break;
+            reserva.setEstado("CONFIRMADA");
+            reserva.setPosicionListaEspera(-1);
+            confirmadas.enqueue(reserva);
+            clase.setCupoActual(clase.getCupoActual()+1);
+            ultimaPromovida=reserva;
+        }
+        renumerarEspera();
     }
 
     public boolean actualizarCodigoSocio(String codigoActual, String codigoNuevo) {

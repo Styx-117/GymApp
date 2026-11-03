@@ -41,7 +41,7 @@ public class UsuarioController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> cred) {
-        Usuario u = usuarioService.login(cred.get("nombreUsuario"), cred.get("contrasena"));
+        Usuario u = usuarioService.login(cred == null ? null : cred.get("nombreUsuario"), cred == null ? null : cred.get("contrasena"));
         return u != null
                 ? ResponseEntity.ok(u)
                 : ResponseEntity.status(401).body("Credenciales inválidas");
