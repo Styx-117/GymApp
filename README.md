@@ -25,6 +25,7 @@ La configuración se encuentra en `src/main/resources/application.properties`. P
 
 ```powershell
 .\mvnw.cmd "-Dtest=*Test,!GymAppApplicationTests" test
+.\mvnw.cmd spring-boot:run
 ```
 
 Esta selección ejecuta las pruebas unitarias sin iniciar la aplicación ni conectarse a PostgreSQL. `GymAppApplicationTests` comprueba el contexto Spring y requiere la configuración de sus servicios.
