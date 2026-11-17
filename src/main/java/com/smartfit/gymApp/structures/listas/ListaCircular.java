@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 
 public class ListaCircular<T> {
     private NodoCircular<T> ultimo;
+    private NodoCircular<T> cursor;
     private int tamanio;
 
     public void agregar(T dato) {
@@ -38,8 +39,10 @@ public class ListaCircular<T> {
         NodoCircular<T> actual = inicio;
         do {
             if (cond.test(actual.getDato())) {
+                if (cursor == actual) cursor = anterior;
                 if (actual == ultimo && actual.getSiguiente() == actual) {
                     ultimo = null;
+                    cursor = null;
                 } else {
                     anterior.setSiguiente(actual.getSiguiente());
                     if (actual == ultimo) ultimo = anterior;
@@ -60,7 +63,13 @@ public class ListaCircular<T> {
         do { accion.accept(a.getDato()); a = a.getSiguiente(); } while (a != inicio);
     }
 
+    public T siguiente() {
+        if (ultimo == null) return null;
+        cursor = cursor == null ? ultimo.getSiguiente() : cursor.getSiguiente();
+        return cursor.getDato();
+    }
+
     public int tamanio() { return tamanio; }
     public boolean estaVacia() { return ultimo == null; }
-    public void vaciar() { ultimo = null; tamanio = 0; }
+    public void vaciar() { ultimo = null; cursor = null; tamanio = 0; }
 }

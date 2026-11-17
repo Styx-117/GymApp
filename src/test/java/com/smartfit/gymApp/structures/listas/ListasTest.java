@@ -112,4 +112,20 @@ class ListasTest {
         Ordenamientos.seleccion(vacia);
         assertTrue(vacia.isEmpty());
     }
+
+    @Test
+    void circularRotaYSeAjustaAlEliminar() {
+        ListaCircular<String> lista = new ListaCircular<>();
+        assertNull(lista.siguiente());
+        lista.agregar("A");
+        lista.agregar("B");
+        lista.agregar("C");
+        assertEquals("A", lista.siguiente());
+        assertEquals("B", lista.siguiente());
+        assertTrue(lista.eliminar(v -> v.equals("B")));
+        assertEquals("C", lista.siguiente());
+        assertEquals("A", lista.siguiente());
+        lista.vaciar();
+        assertNull(lista.siguiente());
+    }
 }

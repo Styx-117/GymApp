@@ -1,7 +1,6 @@
 package com.smartfit.gymApp.structures.arreglos;
 
 import com.smartfit.gymApp.model.Socio;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Predicate;
 
@@ -14,7 +13,11 @@ public class ArregloSocios {
     }
 
     public void agregar(Socio s) {
-        if (tamanio == datos.length) datos = Arrays.copyOf(datos, datos.length * 2);
+        if (tamanio == datos.length) {
+            Socio[] ampliado = new Socio[datos.length * 2];
+            for (int i = 0; i < tamanio; i++) ampliado[i] = datos[i];
+            datos = ampliado;
+        }
         datos[tamanio++] = s;
     }
 
@@ -26,7 +29,7 @@ public class ArregloSocios {
     public boolean eliminar(Predicate<Socio> cond) {
         for (int i = 0; i < tamanio; i++) {
             if (cond.test(datos[i])) {
-                System.arraycopy(datos, i + 1, datos, i, tamanio - i - 1);
+                for (int j = i; j < tamanio - 1; j++) datos[j] = datos[j + 1];
                 datos[--tamanio] = null;
                 return true;
             }
