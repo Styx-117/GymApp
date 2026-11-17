@@ -26,7 +26,7 @@ public class IncidenciaView extends JPanel {
     private final JTable tabla=new JTable(modelo);
     private final TablePager paginacion=new TablePager(modelo,50);
     private final JLabel resumen=UI.etiqueta("Cargando incidencias...");
-    private final JButton registrar=UI.boton("Registrar"),actualizar=UI.boton("Guardar cambios"),atender=UI.boton("Atender siguiente"),cancelar=UI.boton("Cancelar incidencia"),reactivar=UI.boton("Reactivar"),recargar=UI.boton("Actualizar lista");
+    private final JButton registrar=UI.boton("Registrar"),actualizar=UI.boton("Guardar cambios"),atender=UI.boton("Atender siguiente"),cancelar=UI.boton("Cancelar incidencia"),reactivar=UI.boton("Reactivar"),recargar=UI.boton("Actualizar lista"),verCola=UI.boton("Ver cola de prioridad");
     private List<Equipo> equipos=List.of();
     private boolean ocupado;
 
@@ -42,10 +42,11 @@ public class IncidenciaView extends JPanel {
         JPanel sur=new JPanel(new BorderLayout(8,8));sur.setOpaque(false);
         JPanel campos=new JPanel(new GridLayout(1,3,12,0));campos.setOpaque(false);
         campos.add(campo("Equipo registrado",equipo));campos.add(campo("Descripcion (hasta 200 caracteres)",descripcion));campos.add(campo("Prioridad",prioridad));sur.add(campos,BorderLayout.NORTH);
-        JPanel acciones=new JPanel(new GridLayout(2,3,8,8));acciones.setOpaque(false);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar})acciones.add(b);
-        JButton limpiar=UI.boton("Limpiar formulario");acciones.add(limpiar);sur.add(acciones,BorderLayout.CENTER);sur.add(resumen,BorderLayout.SOUTH);add(sur,BorderLayout.SOUTH);
+        JPanel acciones=new JPanel(new GridLayout(2,4,8,8));acciones.setOpaque(false);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar})acciones.add(b);
+        JButton limpiar=UI.boton("Limpiar formulario");acciones.add(limpiar);acciones.add(verCola);sur.add(acciones,BorderLayout.CENTER);sur.add(resumen,BorderLayout.SOUTH);add(sur,BorderLayout.SOUTH);
         equipo.setRenderer(new DefaultListCellRenderer(){public Component getListCellRendererComponent(JList<?> l,Object v,int i,boolean s,boolean f){super.getListCellRendererComponent(l,v,i,s,f);if(v instanceof Equipo e)setText(e.getCodigoEquipo()+" - "+e.getNombre()+" ("+e.getEstado()+")");return this;}});
         recargar.addActionListener(e->refrescarDatos());estado.addActionListener(e->mostrar());filtroPrioridad.addActionListener(e->mostrar());
+        verCola.addActionListener(e->UI.info(this,servicio.getPendientes().mostrar()));
         buscar.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){mostrar();}public void removeUpdate(DocumentEvent e){mostrar();}public void changedUpdate(DocumentEvent e){mostrar();}});
         tabla.getSelectionModel().addListSelectionListener(e->{if(!e.getValueIsAdjusting())seleccionar();});
         registrar.addActionListener(e->{Equipo eq=(Equipo)equipo.getSelectedItem();if(eq==null){UI.aviso(this,"No hay equipos registrados.");return;}String texto=descripcion.getText().trim();int p=prioridad.getSelectedIndex()+1;ejecutar(()->servicio.registrar(eq.getCodigoEquipo(),texto,p));});
@@ -78,5 +79,5 @@ public class IncidenciaView extends JPanel {
             finally{ocupado=false;botones(true);}
         }}.execute();
     }
-    private void botones(boolean valor){paginacion.setBusy(!valor);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar,recargar})b.setEnabled(valor);buscar.setEnabled(valor);estado.setEnabled(valor);filtroPrioridad.setEnabled(valor);equipo.setEnabled(valor);descripcion.setEnabled(valor);prioridad.setEnabled(valor);tabla.setEnabled(valor);}
+    private void botones(boolean valor){paginacion.setBusy(!valor);for(JButton b:new JButton[]{registrar,actualizar,atender,cancelar,reactivar,recargar,verCola})b.setEnabled(valor);buscar.setEnabled(valor);estado.setEnabled(valor);filtroPrioridad.setEnabled(valor);equipo.setEnabled(valor);descripcion.setEnabled(valor);prioridad.setEnabled(valor);tabla.setEnabled(valor);}
 }

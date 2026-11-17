@@ -26,7 +26,7 @@ public class MatrizHorarios {
     }
 
     public void limpiar() {
-        for (Clase[] fila : matriz) java.util.Arrays.fill(fila, null);
+        for (Clase[] fila : matriz) for (int i = 0; i < fila.length; i++) fila[i] = null;
     }
 
     private int dia(String nombre) {

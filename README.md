@@ -5,7 +5,7 @@ Aplicación de escritorio para gestionar el gimnasio, desarrollada con Java, Swi
 ## Requisitos
 
 - JDK 21 o superior y `JAVA_HOME` configurado.
-- Acceso a la base PostgreSQL del gimnasio, con sus tablas existentes.
+- Acceso a la base PostgreSQL del gimnasio. Para crear las tablas, ejecuta `database/schema.sql` en una base nueva.
 - Conexión a Internet para descargar las dependencias de Maven la primera vez.
 
 ## Ejecutar en Windows
@@ -13,7 +13,7 @@ Aplicación de escritorio para gestionar el gimnasio, desarrollada con Java, Swi
 Desde PowerShell:
 
 ```powershell
-cd "C:\Users\WinterOS\Desktop\Nueva carpeta\GymApp"
+cd GymApp
 .\mvnw.cmd spring-boot:run
 ```
 

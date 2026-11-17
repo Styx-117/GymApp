@@ -3,6 +3,7 @@ package com.smartfit.gymApp.views;
 import com.smartfit.gymApp.model.Clase;
 import com.smartfit.gymApp.repository.ClaseDAO;
 import com.smartfit.gymApp.service.ClaseService;
+import com.smartfit.gymApp.structures.listas.ListaCircular;
 import com.smartfit.gymApp.utils.UI;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -20,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 
 public class ClaseView extends JPanel {
     private final ClaseService servicio=new ClaseService();
+    private final ListaCircular<ClaseDAO.EntrenadorOpcion> turnos=new ListaCircular<>();
     private final JTextField buscar=UI.campo(24), nombre=UI.campo(20), inicio=UI.campo(8),fin=UI.campo(8),cupo=UI.campo(6);
     private final JComboBox<String> estado=new JComboBox<>(new String[]{"Activas","Inactivas","Todas"});
     private final JComboBox<String> dia=new JComboBox<>(new String[]{"LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO","DOMINGO"});
@@ -33,7 +35,7 @@ public class ClaseView extends JPanel {
     private final TableRowSorter<DefaultTableModel> orden=new TableRowSorter<>(modelo);
     private final JLabel resumen=UI.etiqueta("Carga las clases para empezar.");
     private final JButton nuevo=UI.boton("Registrar clase"),guardar=UI.boton("Guardar cambios"),
-            cambiar=UI.boton("Desactivar / reactivar"),limpiar=UI.boton("Nuevo formulario"),recargar=UI.boton("Actualizar");
+            cambiar=UI.boton("Desactivar / reactivar"),limpiar=UI.boton("Nuevo formulario"),recargar=UI.boton("Actualizar"),siguiente=UI.boton("Siguiente entrenador");
     private List<ClaseDAO.Registro> registros=new ArrayList<>();
     private boolean ocupado;
     private int versionCarga;
@@ -63,7 +65,7 @@ public class ClaseView extends JPanel {
         campos.add(campo("Nombre",nombre)); campos.add(campo("Entrenador activo",entrenador)); campos.add(campo("Día",dia));
         campos.add(campo("Inicio (HH:mm)",inicio)); campos.add(campo("Fin (HH:mm)",fin)); campos.add(campo("Cupo máximo",cupo));
         sur.add(campos,BorderLayout.CENTER);
-        JPanel botones=UI.fila(); botones.add(nuevo); botones.add(guardar); botones.add(cambiar); botones.add(limpiar);
+        JPanel botones=UI.fila(); botones.add(nuevo); botones.add(guardar); botones.add(cambiar); botones.add(limpiar); botones.add(siguiente);
         sur.add(botones,BorderLayout.SOUTH); add(sur,BorderLayout.SOUTH);
         for(JComboBox<?> combo:new JComboBox<?>[]{estado,dia,entrenador}) { combo.setBackground(UI.CAMPO); combo.setForeground(Color.WHITE); }
         recargar.addActionListener(e -> refrescar());
@@ -74,6 +76,7 @@ public class ClaseView extends JPanel {
             public void changedUpdate(DocumentEvent e) { filtrar(); }
         });
         tabla.getSelectionModel().addListSelectionListener(e -> { if(!e.getValueIsAdjusting()) seleccionar(); });
+        siguiente.addActionListener(e -> siguienteEntrenador());
         limpiar.addActionListener(e -> limpiar()); nuevo.addActionListener(e -> guardar(false)); guardar.addActionListener(e -> guardar(true));
         cambiar.addActionListener(e -> cambiarEstado());
         addHierarchyListener(e -> { if((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED)!=0) { if(isShowing()) refrescar(); else cancelarCarga(); } });
@@ -95,6 +98,7 @@ public class ClaseView extends JPanel {
                     Datos datos=get(); registros=datos.clases();
                     tabla.clearSelection(); modelo.setRowCount(0); entrenador.removeAllItems();
                     datos.entrenadores().forEach(entrenador::addItem);
+                    turnos.vaciar(); datos.entrenadores().forEach(turnos::agregar);
                     for(ClaseDAO.Registro r:registros) {
                         Clase c=r.clase(); modelo.addRow(new Object[]{c.getIdClase(),c.getNombre(),r.entrenador(),c.getDiaSemana(),
                                 texto(c.getHoraInicio()),texto(c.getHoraFin()),c.getCupoMaximo(),c.getCupoActual(),r.activo()?"Activa":"Inactiva"});
@@ -180,9 +184,14 @@ public class ClaseView extends JPanel {
         dia.setSelectedIndex(0); if(entrenador.getItemCount()>0) entrenador.setSelectedIndex(0);
         cambiar.setText("Desactivar / reactivar");
     }
+    private void siguienteEntrenador() {
+        ClaseDAO.EntrenadorOpcion turno=turnos.siguiente();
+        if(turno==null) { UI.aviso(this,"No hay entrenadores activos."); return; }
+        entrenador.setSelectedItem(turno);
+    }
     private void ocupado(boolean valor) {
         ocupado=valor;
-        for(JButton boton:new JButton[]{nuevo,guardar,cambiar,limpiar,recargar}) boton.setEnabled(!valor);
+        for(JButton boton:new JButton[]{nuevo,guardar,cambiar,limpiar,recargar,siguiente}) boton.setEnabled(!valor);
     }
     private void error(Exception ex) {
         Throwable causa=ex instanceof ExecutionException?ex.getCause():ex;

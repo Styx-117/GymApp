@@ -4,6 +4,7 @@ import com.smartfit.gymApp.model.Incidencia;
 import com.smartfit.gymApp.repository.IncidenciaDAO;
 import com.smartfit.gymApp.structures.colas.Cola;
 import com.smartfit.gymApp.structures.colas.ColaPrioridad;
+import com.smartfit.gymApp.structures.listas.ListaEnlazadaSimple;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class IncidenciaService {
     private final IncidenciaDAO dao;
     private final ColaPrioridad<Incidencia> pendientes=new ColaPrioridad<>();
     private final Cola<Incidencia> atendidas=new Cola<>();
-    private final List<Incidencia> canceladas=new ArrayList<>();
+    private final ListaEnlazadaSimple<Incidencia> canceladas=new ListaEnlazadaSimple<>();
     private int contador;
     private IncidenciaService(IncidenciaDAO dao){this.dao=dao;}
     /** Gestor aislado para pruebas de las estructuras, sin servicios externos. */
@@ -31,12 +32,12 @@ public class IncidenciaService {
     public void recargar(){
         if(dao==null)return;
         List<Incidencia> datos=dao.listar();
-        pendientes.vaciar();atendidas.vaciar();canceladas.clear();
+        pendientes.vaciar();atendidas.vaciar();canceladas.vaciar();
         for(Incidencia i:datos){
             contador=Math.max(contador,i.getIdIncidencia());
             if("PENDIENTE".equals(i.getEstado()))pendientes.encolar(i);
             else if("ATENDIDA".equals(i.getEstado()))atendidas.enqueue(i);
-            else canceladas.add(i);
+            else canceladas.agregarFinal(i);
         }
     }
     public Incidencia registrar(String equipo,String descripcion,int prioridad){
@@ -69,14 +70,14 @@ public class IncidenciaService {
         GestionValidator.id(id,"una incidencia");
         if(dao!=null){boolean ok=dao.cambiarEstado(id,"PENDIENTE","CANCELADA",usuario());recargar();return ok;}
         Incidencia i=quitarPendiente(id);if(i==null)return false;
-        i.setEstado("CANCELADA");canceladas.add(i);AuditoriaService.getInstance().registrar("CANCELAR_INCIDENCIA","#"+id);return true;
+        i.setEstado("CANCELADA");canceladas.agregarFinal(i);AuditoriaService.getInstance().registrar("CANCELAR_INCIDENCIA","#"+id);return true;
     }
     public boolean reactivar(int id){
         GestionValidator.id(id,"una incidencia");
         if(dao!=null){boolean ok=dao.cambiarEstado(id,"CANCELADA","PENDIENTE",usuario());recargar();return ok;}
-        for(int n=0;n<canceladas.size();n++)if(canceladas.get(n).getIdIncidencia()==id){
-            Incidencia i=canceladas.remove(n);i.setEstado("PENDIENTE");pendientes.encolar(i);return true;}
-        return false;
+        Incidencia i=canceladas.buscar(c->c.getIdIncidencia()==id);
+        if(i==null)return false;
+        canceladas.eliminar(c->c.getIdIncidencia()==id);i.setEstado("PENDIENTE");pendientes.encolar(i);return true;
     }
     private Incidencia quitarPendiente(int id){
         Cola<Incidencia> temporal=new Cola<>();Incidencia elegida=null;
@@ -86,7 +87,7 @@ public class IncidenciaService {
         while(!temporal.estaVacia())pendientes.encolar(temporal.dequeue());return elegida;
     }
     public List<Incidencia> listar(){
-        List<Incidencia> resultado=new ArrayList<>();pendientes.recorrer(resultado::add);atendidas.recorrer(resultado::add);resultado.addAll(canceladas);return resultado;
+        List<Incidencia> resultado=new ArrayList<>();pendientes.recorrer(resultado::add);atendidas.recorrer(resultado::add);canceladas.recorrer(resultado::add);return resultado;
     }
     public Incidencia verSiguiente(){return pendientes.frente();}
     public boolean hayPendientes(){return !pendientes.estaVacia();}

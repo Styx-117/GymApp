@@ -21,7 +21,7 @@ public class AuditoriaView extends JPanel {
     private final JTable tabla=new JTable(modelo);
     private final TablePager paginacion=new TablePager(modelo,50);
     private final JLabel resumen=UI.etiqueta("Historial persistente de acciones");
-    private final JButton registrar=UI.boton("Registrar nota"),ultima=UI.boton("Ver ultima"),archivar=UI.boton("Archivar ultima"),restaurar=UI.boton("Restaurar seleccionada"),recargar=UI.boton("Actualizar lista");
+    private final JButton registrar=UI.boton("Registrar nota"),ultima=UI.boton("Ver ultima"),archivar=UI.boton("Archivar ultima"),restaurar=UI.boton("Restaurar seleccionada"),recargar=UI.boton("Actualizar lista"),verPila=UI.boton("Ver pila de acciones");
     private List<AuditoriaDAO.Registro> datos=List.of();
     private boolean ocupado;
     public AuditoriaView(){
@@ -34,9 +34,10 @@ public class AuditoriaView extends JPanel {
         resultados.add(UI.scroll(tabla,"Acciones mas recientes primero"),BorderLayout.CENTER);
         resultados.add(paginacion,BorderLayout.SOUTH);add(resultados,BorderLayout.CENTER);
         JPanel sur=new JPanel(new BorderLayout(8,8));sur.setOpaque(false);JPanel escribir=new JPanel(new BorderLayout(8,4));escribir.setOpaque(false);escribir.add(UI.etiqueta("Nota (hasta 255 caracteres)"),BorderLayout.NORTH);escribir.add(nota,BorderLayout.CENTER);escribir.add(registrar,BorderLayout.EAST);sur.add(escribir,BorderLayout.NORTH);
-        JPanel acciones=new JPanel(new GridLayout(1,3,8,0));acciones.setOpaque(false);acciones.add(ultima);acciones.add(archivar);acciones.add(restaurar);sur.add(acciones,BorderLayout.CENTER);sur.add(resumen,BorderLayout.SOUTH);add(sur,BorderLayout.SOUTH);
+        JPanel acciones=new JPanel(new GridLayout(1,4,8,0));acciones.setOpaque(false);acciones.add(ultima);acciones.add(archivar);acciones.add(restaurar);acciones.add(verPila);sur.add(acciones,BorderLayout.CENTER);sur.add(resumen,BorderLayout.SOUTH);add(sur,BorderLayout.SOUTH);
         buscar.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){mostrar();}public void removeUpdate(DocumentEvent e){mostrar();}public void changedUpdate(DocumentEvent e){mostrar();}});estado.addActionListener(e->mostrar());
         recargar.addActionListener(e->refrescarDatos());
+        verPila.addActionListener(e->UI.info(this,servicio.getHistorial().mostrar()));
         registrar.addActionListener(e->{String texto=nota.getText().trim();if(texto.isEmpty()){UI.aviso(this,"Escribe una nota para registrar.");return;}ejecutar(()->{servicio.registrar("NOTA_PERSONAL",texto);cargar();});});
         ultima.addActionListener(e->{Auditoria a=servicio.ultima();UI.info(this,a==null?"No hay acciones activas.":"Ultima accion: #"+a.getIdAuditoria()+"\n"+a.getAccion()+"\n"+a.getDetalle());});
         archivar.addActionListener(e->{Auditoria a=servicio.ultima();if(a==null){UI.aviso(this,"No hay acciones activas para archivar.");return;}if(JOptionPane.showConfirmDialog(this,"¿Archivar la ultima accion del historial?\nEl registro se conserva. Esta accion no deshace la operacion registrada.","Archivar historial",JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION)ejecutar(()->{servicio.archivarUltima();datos=servicio.instantanea();});});
@@ -62,5 +63,5 @@ public class AuditoriaView extends JPanel {
         if(ocupado)return;ocupado=true;botones(false);resumen.setText("Consultando el historial...");
         new SwingWorker<Void,Void>(){protected Void doInBackground(){tarea.run();return null;}protected void done(){try{get();mostrar();}catch(Exception e){Throwable c=e.getCause()==null?e:e.getCause();resumen.setText("No se pudo completar la operacion.");UI.aviso(AuditoriaView.this,c.getMessage());}finally{ocupado=false;botones(true);}}}.execute();
     }
-    private void botones(boolean valor){paginacion.setBusy(!valor);for(JButton b:new JButton[]{registrar,ultima,archivar,restaurar,recargar})b.setEnabled(valor);buscar.setEnabled(valor);estado.setEnabled(valor);nota.setEnabled(valor);tabla.setEnabled(valor);}
+    private void botones(boolean valor){paginacion.setBusy(!valor);for(JButton b:new JButton[]{registrar,ultima,archivar,restaurar,recargar,verPila})b.setEnabled(valor);buscar.setEnabled(valor);estado.setEnabled(valor);nota.setEnabled(valor);tabla.setEnabled(valor);}
 }

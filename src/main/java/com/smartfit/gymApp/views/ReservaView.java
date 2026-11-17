@@ -34,7 +34,7 @@ public class ReservaView extends JPanel {
     private final TableRowSorter<DefaultTableModel> orden=new TableRowSorter<>(modelo);
     private final JButton reservar=UI.boton("Reservar cupo"),cancelar=UI.boton("Cancelar seleccionada"),
             reasignar=UI.boton("Reasignar al socio elegido"),confirmar=UI.boton("Confirmar espera por orden"),
-            recargar=UI.boton("Actualizar");
+            recargar=UI.boton("Actualizar"),verColas=UI.boton("Ver colas");
     private List<ClaseDAO.Registro> registros=new ArrayList<>();
     private ReservaDAO.Carga carga;
     private boolean ocupado;
@@ -63,7 +63,7 @@ public class ReservaView extends JPanel {
         tabla.getTableHeader().setBackground(UI.PANEL); tabla.getTableHeader().setForeground(Color.WHITE);
         centro.add(UI.scroll(tabla,"Reservas e historial"),BorderLayout.CENTER); add(centro,BorderLayout.CENTER);
         JPanel sur=new JPanel(new BorderLayout(0,6)); sur.setOpaque(false);
-        JPanel acciones=UI.fila(); acciones.add(cancelar); acciones.add(reasignar); acciones.add(confirmar);
+        JPanel acciones=UI.fila(); acciones.add(cancelar); acciones.add(reasignar); acciones.add(confirmar); acciones.add(verColas);
         sur.add(acciones,BorderLayout.NORTH);
         sur.add(UI.etiqueta("Cancelar conserva el historial. Una nueva reserva entra al final de la espera si no hay cupo."),BorderLayout.SOUTH);
         add(sur,BorderLayout.SOUTH);
@@ -83,6 +83,7 @@ public class ReservaView extends JPanel {
         recargar.addActionListener(e -> refrescar()); reservar.addActionListener(e -> reservar());
         cancelar.addActionListener(e -> cancelar()); reasignar.addActionListener(e -> reasignar());
         confirmar.addActionListener(e -> confirmar());
+        verColas.addActionListener(e -> verColas());
         addHierarchyListener(e -> { if((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED)!=0) { if(isShowing()) refrescar(); else cancelarCarga(); } });
         botones();
     }
@@ -252,6 +253,10 @@ public class ReservaView extends JPanel {
         reasignar.setEnabled(activa && vigente && disponible);
         confirmar.setEnabled(activa && !carga.gestor().getListaEspera().estaVacia()
                 && carga.clase().tieneCupoDisponible());
+    }
+    private void verColas() {
+        if(carga==null) { UI.aviso(this,"Selecciona una clase para ver sus colas."); return; }
+        UI.info(this,"CONFIRMADAS\n"+carga.gestor().getConfirmadas().mostrar()+"\nLISTA DE ESPERA\n"+carga.gestor().getListaEspera().mostrar());
     }
     private boolean tieneReserva(String codigo) {
         return carga!=null && carga.filas().stream().map(ReservaDAO.Fila::reserva)
